@@ -64,12 +64,9 @@ def interpolate_height(pressure_level, pressures, heights):
 def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp):
     # Filter data for pressures above 100 hPa
     valid_indices = pressures > 100  # Only include pressures above 100 hPa
-    pressures = pressures[valid_indices]
-    temperatures = temperatures[valid_indices]
-    dewpoints = dewpoints[valid_indices]
-    wind_u = wind_u[valid_indices]
-    wind_v = wind_v[valid_indices]
-    heights = heights[valid_indices]
+    pressures_short = pressures[valid_indices]
+    wind_u_short = wind_u[valid_indices]
+    wind_v_short = wind_v[valid_indices]
 
     # Calculate CAPE and CIN
     parcel = parcel_profile(pressures * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
@@ -81,11 +78,28 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     pressure_el, temperature_el = el(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel)
     pressure_ccl, temperature_ccl, _ = ccl(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC)
 
+    # Ensure LFC and EL pressures have the same units as the profile pressures
+    pressure_lfc = pressure_lfc.to(units.hPa)
+    pressure_el = pressure_el.to(units.hPa)
+
     # Interpolate heights from the geopotential height data
     height_lcl = interpolate_height(pressure_lcl, pressures * units.hPa, heights)
-    height_lfc = interpolate_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.m) else np.nan
-    height_el = interpolate_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.m) else np.nan
+    height_lfc = interpolate_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.magnitude) else np.nan
+    height_el = interpolate_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.magnitude) else np.nan
     height_ccl = interpolate_height(pressure_ccl, pressures * units.hPa, heights)
+
+    # Limit the pressure range for CAPE and CIN shading
+    # For CAPE, we only want to shade from the LFC to the EL
+    cape_indices = (pressures <= pressure_lfc.magnitude) & (pressures >= pressure_el.magnitude)
+    pressures_cape = pressures[cape_indices]
+    temperatures_cape = temperatures[cape_indices]
+    parcel_cape = parcel[cape_indices]
+
+    # For CIN, we only want to shade from the surface to the LFC
+    cin_indices = pressures >= pressure_lfc.magnitude
+    pressures_cin = pressures[cin_indices]
+    temperatures_cin = temperatures[cin_indices]
+    parcel_cin = parcel[cin_indices]
 
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(9, 9))
@@ -94,13 +108,17 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Plot the data
     skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
-    skew.plot_barbs(pressures * units.hPa, wind_u * units.meter / units.second, wind_v * units.meter / units.second)
+    skew.plot_barbs(pressures_short * units.hPa, wind_u_short * units.meter / units.second, wind_v_short * units.meter / units.second)
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1, label='0°C Reference Line')
 
     # Add special lines with labels
     skew.plot_dry_adiabats(linewidth=0.8, colors='green', label='Dry Adiabats')
     skew.plot_moist_adiabats(linewidth=0.8, colors='darkorange', label='Moist Adiabats')
     skew.plot_mixing_lines(linewidth=0.8, colors='purple', label='Mixing Lines')
+
+    # Shade the CAPE and CIN areas
+    skew.shade_cape(pressures_cape * units.hPa, temperatures_cape * units.degC, parcel_cape)
+    skew.shade_cin(pressures_cin * units.hPa, temperatures_cin * units.degC, parcel_cin)
 
     # Highlight LCL, LFC, EL, and CCL on the plot
     skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', label='LCL', zorder=10)
@@ -142,9 +160,10 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Show the plot
     plt.show()
 
+
 # Main execution
 def main():
-    filename = 'aliceSprings.json'
+    filename = 'broome.json'
     data = load_geojson(filename)
     pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp = parse_geojson(data)
     plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp)
