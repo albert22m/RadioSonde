@@ -4,8 +4,8 @@ import numpy as np
 from metpy.plots import SkewT
 from metpy.units import units
 from datetime import datetime, timedelta
-from metpy.calc import cape_cin
-from metpy.calc import parcel_profile
+from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl
+from scipy.interpolate import interp1d
 
 # Load the GeoJSON file
 def load_geojson(filename):
@@ -55,6 +55,12 @@ def parse_geojson(data):
         timestamp
     )
 
+def interpolate_height(pressure_level, pressures, heights):
+    """Interpolate height for a given pressure level using available data."""
+    height_interp = interp1d(pressures, heights, bounds_error=False, fill_value=np.nan)
+    return height_interp(pressure_level.m)
+
+
 # Plot the Skew-T diagram
 def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp):
     # Filter data for pressures above 100 hPa
@@ -66,9 +72,23 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     wind_v = wind_v[valid_indices]
     heights = heights[valid_indices]
 
-    # Calculate CAPE and CIN using MetPy
-    parcel_prof = parcel_profile(pressures * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
-    cape, cin = cape_cin(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel_prof)
+    # Calculate CAPE and CIN
+    parcel = parcel_profile(pressures * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
+    cape, cin = cape_cin(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel)
+
+    # Calculate LCL, LFC, EL, and CCL
+    pressure_lcl, temperature_lcl = lcl(pressures[0] * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
+    pressure_lfc, temperature_lfc = lfc(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel)
+    pressure_el, temperature_el = el(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel)
+    pressure_ccl, temperature_ccl, _ = ccl(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC)
+
+    # Interpolate heights from the geopotential height data
+    height_lcl = interpolate_height(pressure_lcl, pressures * units.hPa, heights)
+    height_lfc = interpolate_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.m) else np.nan
+    height_el = interpolate_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.m) else np.nan
+    height_ccl = interpolate_height(pressure_ccl, pressures * units.hPa, heights)
+
+
 
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(9, 9))
@@ -85,11 +105,17 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     skew.plot_moist_adiabats(linewidth=0.8, colors='darkorange', label='Moist Adiabats')
     skew.plot_mixing_lines(linewidth=0.8, colors='purple', label='Mixing Lines')
 
+    # Highlight LCL, LFC, EL, and CCL on the plot
+    skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', label='LCL', zorder=10)
+    skew.ax.scatter(temperature_lfc, pressure_lfc, color='lime', label='LFC', zorder=10)
+    skew.ax.scatter(temperature_el, pressure_el, color='cyan', label='EL', zorder=10)
+    skew.ax.scatter(temperature_ccl, pressure_ccl, color='orange', label='CCL', zorder=10)
+
     # Add a legend outside the plot
     skew.ax.legend(
-        loc='upper left',  # Anchor to the upper left of the axis
-        fontsize=10,  # Font size
-        frameon=True,  # Add a box around the legend
+        loc='upper left',
+        fontsize=10,
+        frameon=True,
     )
 
     # Add a title with two aligned sections
@@ -98,14 +124,20 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     skew.ax.set_title(timestamp, loc='center', fontsize=14)
     skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)
 
-    # Add CAPE information
+    # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
-        0.85, 0.85,  # horizontal, vertical
-        f'CAPE = {cape.m / 1000:.2f} kJ/kg',
+        0.85, 0.85,
+        f'CAPE = {cape.m:.2f} J/kg\n'
+        f'CIN = {cin.m:.2f} J/kg\n'
+        f'LCL = {height_lcl:.1f} m\n'
+        f'LFC = {"N/A" if np.isnan(height_lfc) else f"{height_lfc:.1f} m"}\n'
+        f'EL = {"N/A" if np.isnan(height_el) else f"{height_el:.1f} m"}\n'
+        f'CCL = {height_ccl:.1f} m',
         fontsize=12,
-        va='bottom',  # Vertical alignment
-        ha='right'  # Horizontal alignment
+        va='top',
+        ha='right'
     )
+
 
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=12)
@@ -114,10 +146,9 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Show the plot
     plt.show()
 
-
 # Main execution
 def main():
-    filename = 'barcelona.json'
+    filename = 'aliceSprings.json'
     data = load_geojson(filename)
 
     pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp = parse_geojson(data)
