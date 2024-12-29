@@ -60,7 +60,6 @@ def interpolate_height(pressure_level, pressures, heights):
     height_interp = interp1d(pressures, heights, bounds_error=False, fill_value=np.nan)
     return height_interp(pressure_level.m)
 
-
 # Plot the Skew-T diagram
 def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp):
     # Filter data for pressures above 100 hPa
@@ -87,8 +86,6 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     height_lfc = interpolate_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.m) else np.nan
     height_el = interpolate_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.m) else np.nan
     height_ccl = interpolate_height(pressure_ccl, pressures * units.hPa, heights)
-
-
 
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(9, 9))
@@ -138,7 +135,6 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         ha='right'
     )
 
-
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=12)
     plt.ylabel('Pressure (hPa)', fontsize=12)
@@ -150,9 +146,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 def main():
     filename = 'aliceSprings.json'
     data = load_geojson(filename)
-
     pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp = parse_geojson(data)
-
     plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp)
 
 if __name__ == '__main__':
