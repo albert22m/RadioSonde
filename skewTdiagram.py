@@ -89,13 +89,11 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     height_ccl = interpolate_height(pressure_ccl, pressures * units.hPa, heights)
 
     # Limit the pressure range for CAPE and CIN shading
-    # For CAPE, we only want to shade from the LFC to the EL
     cape_indices = (pressures <= pressure_lfc.magnitude) & (pressures >= pressure_el.magnitude)
     pressures_cape = pressures[cape_indices]
     temperatures_cape = temperatures[cape_indices]
     parcel_cape = parcel[cape_indices]
 
-    # For CIN, we only want to shade from the surface to the LFC
     cin_indices = pressures >= pressure_lfc.magnitude
     pressures_cin = pressures[cin_indices]
     temperatures_cin = temperatures[cin_indices]
@@ -141,13 +139,26 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
+        0.76, 0.85,
+        f'CAPE\n'
+        f'CIN\n'
+        f'LCL\n'
+        f'LFC\n'
+        f'EL\n'
+        f'CCL',
+        fontsize=12,
+        va='top',
+        ha='left'
+    )
+
+    fig.text(
         0.85, 0.85,
-        f'CAPE = {cape.m:.2f} J/kg\n'
-        f'CIN = {cin.m:.2f} J/kg\n'
-        f'LCL = {height_lcl:.1f} m\n'
-        f'LFC = {"N/A" if np.isnan(height_lfc) else f"{height_lfc:.1f} m"}\n'
-        f'EL = {"N/A" if np.isnan(height_el) else f"{height_el:.1f} m"}\n'
-        f'CCL = {height_ccl:.1f} m',
+        f'{cape.m:.2f} J/kg\n'
+        f'{cin.m:.2f} J/kg\n'
+        f'{height_lcl:.1f} m\n'
+        f'{"N/A" if np.isnan(height_lfc) else f"{height_lfc:.1f} m"}\n'
+        f'{"N/A" if np.isnan(height_el) else f"{height_el:.1f} m"}\n'
+        f'{height_ccl:.1f} m',
         fontsize=12,
         va='top',
         ha='right'
