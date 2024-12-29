@@ -4,6 +4,8 @@ import numpy as np
 from metpy.plots import SkewT
 from metpy.units import units
 from datetime import datetime, timedelta
+from metpy.calc import cape_cin
+from metpy.calc import parcel_profile
 
 # Load the GeoJSON file
 def load_geojson(filename):
@@ -64,6 +66,10 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     wind_v = wind_v[valid_indices]
     heights = heights[valid_indices]
 
+    # Calculate CAPE and CIN using MetPy
+    parcel_prof = parcel_profile(pressures * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
+    cape, cin = cape_cin(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel_prof)
+
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(9, 9))
     skew = SkewT(fig, rotation=45)
@@ -71,12 +77,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Plot the data
     skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
-    skew.plot_barbs(
-        pressures[::3] * units.hPa,  # Plot every other pressure level
-        wind_u[::3] * units.meter / units.second,
-        wind_v[::3] * units.meter / units.second
-    )
-
+    skew.plot_barbs(pressures * units.hPa, wind_u * units.meter / units.second, wind_v * units.meter / units.second)
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1, label='0°C Reference Line')
 
     # Add special lines with labels
@@ -91,11 +92,20 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         frameon=True,  # Add a box around the legend
     )
 
-    # Add a title with three aligned sections
+    # Add a title with two aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
     skew.ax.set_title('Skew-T Log-P Diagram', loc='left', fontsize=14)
     skew.ax.set_title(timestamp, loc='center', fontsize=14)
     skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)
+
+    # Add CAPE information
+    fig.text(
+        0.85, 0.85,  # horizontal, vertical
+        f'CAPE = {cape.m / 1000:.2f} kJ/kg',
+        fontsize=12,
+        va='bottom',  # Vertical alignment
+        ha='right'  # Horizontal alignment
+    )
 
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=12)
@@ -103,6 +113,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     # Show the plot
     plt.show()
+
 
 # Main execution
 def main():
