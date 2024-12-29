@@ -106,23 +106,35 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Plot the data
     skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
-    skew.plot_barbs(pressures_short * units.hPa, wind_u_short * units.meter / units.second, wind_v_short * units.meter / units.second)
+    skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second, wind_v_short[::3] * units.meter / units.second)
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1, label='0°C Reference Line')
 
     # Add special lines with labels
-    skew.plot_dry_adiabats(linewidth=0.8, colors='green', label='Dry Adiabats')
-    skew.plot_moist_adiabats(linewidth=0.8, colors='darkorange', label='Moist Adiabats')
-    skew.plot_mixing_lines(linewidth=0.8, colors='purple', label='Mixing Lines')
+    skew.plot_dry_adiabats(linewidth=1, colors='darkorange', label='Dry Adiabats')
+    skew.plot_moist_adiabats(linewidth=1, colors='green', label='Moist Adiabats')
+    skew.plot_mixing_lines(linewidth=1, colors='purple', label='Mixing Lines')
 
     # Shade the CAPE and CIN areas
     skew.shade_cape(pressures_cape * units.hPa, temperatures_cape * units.degC, parcel_cape)
     skew.shade_cin(pressures_cin * units.hPa, temperatures_cin * units.degC, parcel_cin)
-
+    
     # Highlight LCL, LFC, EL, and CCL on the plot
-    skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', label='LCL', zorder=10)
-    skew.ax.scatter(temperature_lfc, pressure_lfc, color='lime', label='LFC', zorder=10)
-    skew.ax.scatter(temperature_el, pressure_el, color='cyan', label='EL', zorder=10)
-    skew.ax.scatter(temperature_ccl, pressure_ccl, color='orange', label='CCL', zorder=10)
+    skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', zorder=10)
+    skew.ax.annotate('LCL', xy=(temperature_lcl, pressure_lcl), xytext=(-10, -4),
+                 textcoords='offset points', color='black', fontsize=9, ha='right',
+                 bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
+    skew.ax.scatter(temperature_lfc, pressure_lfc, color='lime', zorder=10)
+    skew.ax.annotate('LFC', xy=(temperature_lfc, pressure_lfc), xytext=(10, -4),
+                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
+    skew.ax.scatter(temperature_el, pressure_el, color='cyan', zorder=10)
+    skew.ax.annotate('EL', xy=(temperature_el, pressure_el), xytext=(10, -4),
+                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
+    skew.ax.scatter(temperature_ccl, pressure_ccl, color='orange', zorder=10)
+    skew.ax.annotate('CCL', xy=(temperature_ccl, pressure_ccl), xytext=(10, -4),
+                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
 
     # Add a legend outside the plot
     skew.ax.legend(
@@ -171,10 +183,9 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Show the plot
     plt.show()
 
-
 # Main execution
 def main():
-    filename = 'broome.json'
+    filename = 'barcelona.json'
     data = load_geojson(filename)
     pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp = parse_geojson(data)
     plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp)
