@@ -1,6 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import metpy.calc as mpcalc
 from metpy.plots import SkewT
 from metpy.units import units
 from datetime import datetime, timedelta
@@ -33,7 +34,7 @@ def parse_geojson(data):
             wind_v.append(props['wind_v'])
             heights.append(props['gpheight'])  # Geopotential height
 
-    # Extract latitude and longitude from the top-level properties
+    # Extract latitude and longitude
     lat = data['properties']['lat']
     lon = data['properties']['lon']
 
@@ -41,7 +42,7 @@ def parse_geojson(data):
     timestamp = data['features'][0]['properties']['time']
     timestamp = datetime.utcfromtimestamp(timestamp)  # Convert the timestamp to a datetime object
     timestamp += timedelta(hours=1)
-    timestamp = timestamp.strftime('%b %d, %Y %H:%M') + 'Z'  # Format the datetime as a human-readable string
+    timestamp = timestamp.strftime('%b %d, %Y %H:%M') + 'Z'  # Format the datetime as string
 
     return (
         np.array(pressures),
@@ -63,7 +64,7 @@ def interpolate_height(pressure_level, pressures, heights):
 # Plot the Skew-T diagram
 def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp):
     # Filter data for pressures above 100 hPa
-    valid_indices = pressures > 100  # Only include pressures above 100 hPa
+    valid_indices = pressures > 100
     pressures_short = pressures[valid_indices]
     wind_u_short = wind_u[valid_indices]
     wind_v_short = wind_v[valid_indices]
@@ -100,7 +101,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     parcel_cin = parcel[cin_indices]
 
     # Create a new figure and Skew-T diagram
-    fig = plt.figure(figsize=(9, 9))
+    fig = plt.figure(figsize=(10, 10))
     skew = SkewT(fig, rotation=45)
 
     # Plot the data
@@ -136,6 +137,17 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
 
+    secax = skew.ax.secondary_yaxis(1.07,
+        functions=(
+            lambda p: mpcalc.pressure_to_height_std(units.Quantity(p, 'hPa')).m_as('km'),
+            lambda h: mpcalc.height_to_pressure_std(units.Quantity(h, 'km')).m
+            )
+        )
+    secax.yaxis.set_major_locator(plt.FixedLocator([0, 1, 3, 6, 9, 12, 15]))
+    secax.yaxis.set_minor_locator(plt.NullLocator())
+    secax.yaxis.set_major_formatter(plt.ScalarFormatter())
+    secax.set_ylabel('Height (km)')
+    
     # Add a legend outside the plot
     skew.ax.legend(
         loc='upper left',
@@ -151,13 +163,13 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
-        0.76, 0.85,
-        f'CAPE\n'
-        f'CIN\n'
-        f'LCL\n'
-        f'LFC\n'
-        f'EL\n'
-        f'CCL',
+        0.75, 0.85,
+        'CAPE\n'
+        'CIN\n'
+        'LCL\n'
+        'LFC\n'
+        'EL\n'
+        'CCL',
         fontsize=12,
         va='top',
         ha='left'
@@ -176,9 +188,36 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         ha='right'
     )
 
+    fig.text(
+        0.62, 0.55,
+        r'$\bf{Convective\ Available\ Potential\ Energy\ (CAPE):\ }$'
+        'is a measure of the amount of\nenergy available for convection in the atmosphere. It indicates the potential for\n'
+        'thunderstorms and severe weather by quantifying the buoyancy of air parcels.\n\n'
+        r'$\bf{Convective\ Inhibition\ (CIN):\ }$'
+        'refers to the energy that prevents air parcels from\nrising and developing convection. It represents a layer of the'
+        ' atmosphere where the\ntemperature increases with height, inhibiting the upward motion of air.\n\n'
+        r'$\bf{Lifted\ Condensation\ Level\ (LCL):\ }$'
+        'is the height where unsaturated air from the\nsurface will cool and reach saturation. This makes it the level'
+        ' of the cloud base\nwhen fronts move on.\n\n'
+        r'$\bf{Level\ of\ Free\ Convection\ (LFC):\ }$'
+        'is the altitude at which a lifted air parcel\nbecomes buoyant enough to continue rising freely and accelerate upward,'
+        '\nforming a thunderstorm.\n\n'
+        r'$\bf{Equilibrium\ Level\ (EL):\ }$'
+        'is the altitude at which a rising air parcel becomes cooler\nthan the surrounding air and stops rising. The EL is'
+        ' often associated with the top of\na thunderstorm cloud.\n\n'
+        r'$\bf{Convective\ Condensation\ Level\ (CCL):\ }$'
+        'is the height at which air from the\nsurface will become saturated when lifted convectively.\n\n'
+        ,
+        fontsize=12,
+        va='top',
+        ha='left'
+    )
+
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=12)
     plt.ylabel('Pressure (hPa)', fontsize=12)
+
+    fig.subplots_adjust(left=-0.4, bottom=0.07, right=1, top=0.95, wspace=0, hspace=0)
 
     # Show the plot
     plt.show()
