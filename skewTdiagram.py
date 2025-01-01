@@ -2,11 +2,13 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import metpy.calc as mpcalc
-from metpy.plots import SkewT
+from metpy.plots import SkewT, Hodograph
 from metpy.units import units
 from datetime import datetime, timedelta
 from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl
 from scipy.interpolate import interp1d
+from geopy.geocoders import Nominatim
+from matplotlib.gridspec import GridSpec
 
 # Load the GeoJSON file
 def load_geojson(filename):
@@ -56,13 +58,35 @@ def parse_geojson(data):
         timestamp
     )
 
-def interpolate_height(pressure_level, pressures, heights):
+def get_city_name(lat, lon):
+    geolocator = Nominatim(user_agent="SkewTdiagram")
+    location = geolocator.reverse((lat, lon), exactly_one=True)
+
+    if location and location.raw.get('address'):
+        address = location.raw['address']
+
+        city = address.get('city')
+        if city:
+            return city
+        
+        locality = address.get('town') or address.get('village') or address.get('county')
+        if locality:
+            locality_name = locality.lower()
+            if "town of" in locality_name:
+                return locality_name.replace("town of", "").strip()
+            if "village of" in locality_name:
+                return locality_name.replace("village of", "").strip()
+            return locality
+        
+    return 'Unknown City'
+
+def pressure_to_height(pressure_level, pressures, heights):
     """Interpolate height for a given pressure level using available data."""
     height_interp = interp1d(pressures, heights, bounds_error=False, fill_value=np.nan)
     return height_interp(pressure_level.m)
 
 # Plot the Skew-T diagram
-def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp):
+def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp, filename):
     # Filter data for pressures above 100 hPa
     valid_indices = pressures > 100
     pressures_short = pressures[valid_indices]
@@ -84,10 +108,10 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     pressure_el = pressure_el.to(units.hPa)
 
     # Interpolate heights from the geopotential height data
-    height_lcl = interpolate_height(pressure_lcl, pressures * units.hPa, heights)
-    height_lfc = interpolate_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.magnitude) else np.nan
-    height_el = interpolate_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.magnitude) else np.nan
-    height_ccl = interpolate_height(pressure_ccl, pressures * units.hPa, heights)
+    height_lcl = pressure_to_height(pressure_lcl, pressures * units.hPa, heights)
+    height_lfc = pressure_to_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.magnitude) else np.nan
+    height_el = pressure_to_height(pressure_el, pressures * units.hPa, heights) if not np.isnan(pressure_el.magnitude) else np.nan
+    height_ccl = pressure_to_height(pressure_ccl, pressures * units.hPa, heights)
 
     # Limit the pressure range for CAPE and CIN shading
     cape_indices = (pressures <= pressure_lfc.magnitude) & (pressures >= pressure_el.magnitude)
@@ -101,7 +125,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     parcel_cin = parcel[cin_indices]
 
     # Create a new figure and Skew-T diagram
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(10, 10), dpi=96)
     skew = SkewT(fig, rotation=45)
 
     # Plot the data
@@ -154,29 +178,27 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         fontsize=10,
         frameon=True,
     )
+    
+    city = get_city_name(lat, lon)
+    city = city.upper()
 
-    # Add a title with two aligned sections
+    # Add a title with aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
-    skew.ax.set_title('Skew-T Log-P Diagram', loc='left', fontsize=14)
+    skew.ax.set_title(f'Skew-T Log-P, {city}', loc='left', fontsize=14)
     skew.ax.set_title(timestamp, loc='center', fontsize=14)
     skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
-        0.75, 0.85,
-        'CAPE\n'
-        'CIN\n'
-        'LCL\n'
-        'LFC\n'
-        'EL\n'
-        'CCL',
+        0.85, 0.85,
+        'CAPE\nCIN\nLCL\nLFC\nEL\nCCL',
         fontsize=12,
         va='top',
         ha='left'
     )
 
     fig.text(
-        0.85, 0.85,
+        0.95, 0.85,
         f'{cape.m:.2f} J/kg\n'
         f'{cin.m:.2f} J/kg\n'
         f'{height_lcl:.1f} m\n'
@@ -189,7 +211,7 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     )
 
     fig.text(
-        0.62, 0.55,
+        0.62, 0.50,
         r'$\bf{Convective\ Available\ Potential\ Energy\ (CAPE):\ }$'
         'is a measure of the amount of\nenergy available for convection in the atmosphere. It indicates the potential for\n'
         'thunderstorms and severe weather by quantifying the buoyancy of air parcels.\n\n'
@@ -219,6 +241,32 @@ def plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     fig.subplots_adjust(left=-0.4, bottom=0.07, right=1, top=0.95, wspace=0, hspace=0)
 
+    #  Calculate above ground level (AGL) heights
+    agl = (heights - heights[0]) / 1000
+    mask = agl <= 10   # Limit to heights below 10 km
+    intervals = np.array([0, 1, 3, 5, 8, 10])
+    colors = ['tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:pink']
+
+    # Add hodograph on the right
+    gs = GridSpec(1, 2, left=0.5, bottom=0.5, right=0.8, top=1.13, wspace=0, hspace=0)
+    ax_hodo = fig.add_subplot(gs[0, 1])
+    h = Hodograph(ax_hodo, component_range=30.)
+    h.add_grid(increment=10)
+    l = h.plot_colormapped(
+        wind_u[mask],
+        wind_v[mask],
+        agl[mask],
+        intervals=intervals,
+        colors=colors
+    )
+    # Add the colorbar with custom size
+    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.38)  # shrink value controls size
+    cbar.set_label('Height (km)', fontsize=12)
+    cbar.ax.tick_params(labelsize=10)
+
+    ax_hodo.set_xlabel('Wind Speed (m/s)', fontsize=12)
+    ax_hodo.set_ylabel('Wind Speed (m/s)', fontsize=12)
+
     # Show the plot
     plt.show()
 
@@ -227,7 +275,7 @@ def main():
     filename = 'barcelona.json'
     data = load_geojson(filename)
     pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp = parse_geojson(data)
-    plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp)
+    plot_skewt(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp, filename)
 
 if __name__ == '__main__':
     main()
