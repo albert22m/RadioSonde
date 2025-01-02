@@ -174,5 +174,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     fig.set_size_inches(1920 / 96, 957 / 96)
     plt.savefig(output_filename, dpi = 96, format='png')
 
-    # Show the plot
-    plt.show()
+    #plt.show(block=False)
+    #plt.pause(.1)
+    #plt.close()

@@ -61,10 +61,10 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         np.array(pressure_ccl),
         np.array(temperature_ccl),
         np.array(height_ccl),
-        np.array(pressures_cape),
-        np.array(temperatures_cape),
-        np.array(parcel_cape),
-        np.array(pressures_cin),
-        np.array(temperatures_cin),
-        np.array(parcel_cin)
+        pressures_cape,
+        temperatures_cape,
+        parcel_cape,
+        pressures_cin,
+        temperatures_cin,
+        parcel_cin
     )
