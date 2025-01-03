@@ -31,7 +31,7 @@ The repository consists of the following directories and files:<br>
   Main entry point for running the program.
 
 
-To install and use this repository, make sure you have Python 3.x installed. Then, clone the repository and install the necessary dependencies using:<n>
+To install and use this repository, make sure you have Python 3.x installed. Then, clone the repository and install the necessary dependencies using:<br>
 ```git clone <repository-url>```
 ```cd <repository-directory>```
 ```pip install -r requirements.txt```
