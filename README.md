@@ -2,7 +2,7 @@
 This project processes meteorological sounding data in the GeoJSON format and generates Skew-T plots. It includes data extraction, calculations for pressure to geopotential height interpolation, and visualizations of atmospheric profiles.
 
 ## Repository Structure
-The repository consists of the following directories and files:
+The repository consists of the following directories and files:<br>
 GeojsonData/      - Contains multiple .json files with meteorological sounding data.<br>
 Soundings/        - Contains .png files of the generated Skew-T plots.
 get_city_name.py  - Extracts city names from GeoJSON data to identify the location of the sounding.
