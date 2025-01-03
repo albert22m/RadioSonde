@@ -37,4 +37,4 @@ To install and use this repository, make sure you have Python 3.x installed. The
 ```pip install -r requirements.txt```
 
 To run the program, simply execute main.py:
-```python main.p```
+```python main.py```
