@@ -17,11 +17,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     skew = SkewT(fig, rotation=45)
 
     # Plot the data
+    skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1)
     skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
     skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second, wind_v_short[::3] * units.meter / units.second)
-    skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1, label='0°C Reference Line')
-
+    
     # Add special lines with labels
     skew.plot_dry_adiabats(linewidth=1, colors='darkorange', label='Dry Adiabats')
     skew.plot_moist_adiabats(linewidth=1, colors='green', label='Moist Adiabats')
