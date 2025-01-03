@@ -19,7 +19,7 @@ def parse_geojson(data):
             dewpoints.append(props['dewpoint'] - 273.15)  # Convert Kelvin to Celsius
             wind_u.append(props['wind_u'])
             wind_v.append(props['wind_v'])
-            heights.append(props['gpheight'])  # Geopotential height
+            heights.append(props['gpheight'])
 
     # Extract latitude and longitude
     lat = data['properties']['lat']
@@ -29,7 +29,6 @@ def parse_geojson(data):
     timestamp = data['features'][0]['properties']['time']
     timestamp = datetime.utcfromtimestamp(timestamp)  # Convert the timestamp to a datetime object
     timestamp += timedelta(hours=1)
-    timestamp = timestamp.strftime('%b %d, %Y %H:%M') + 'Z'  # Format the datetime as string
 
     return (
         np.array(pressures),

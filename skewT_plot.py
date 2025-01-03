@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import metpy.calc as mpcalc
@@ -72,7 +73,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Add a title with aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
     skew.ax.set_title(f'Skew-T Log-P, {city}', loc='left', fontsize=14)
-    skew.ax.set_title(timestamp, loc='center', fontsize=14)
+    timestamp_plt = timestamp.strftime('%b %d, %Y %H:%M') + 'Z' # Format datetime object to string
+    skew.ax.set_title(timestamp_plt, loc='center', fontsize=14)
     skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
@@ -170,7 +172,15 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     ax_hodo.set_ylabel('Wind Speed (m/s)', fontsize=12)
 
     # Save figure
-    output_filename = filename.replace('.json', '.png')
+    output_dir = "Soundings"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Save the plot in the 'Soundings' directory
+    output_filename = filename.replace('.json', '')
+    timestamp_fig = timestamp.strftime('%Y%m%d%H')
+    output_filename = os.path.join(output_dir, f"{output_filename}_{timestamp_fig}.png")
+    
     fig.set_size_inches(1920 / 96, 957 / 96)
     plt.savefig(output_filename, dpi = 96, format='png')
 
