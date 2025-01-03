@@ -3,7 +3,7 @@ This project processes meteorological sounding data in the GeoJSON format and ge
 
 ## Repository Structure
 The repository consists of the following directories and files:
-GeojsonData/      - Contains multiple .json files with meteorological sounding data.
+GeojsonData/      - Contains multiple .json files with meteorological sounding data.<br>
 Soundings/        - Contains .png files of the generated Skew-T plots.
 get_city_name.py  - Extracts city names from GeoJSON data to identify the location of the sounding.
 load_geojson.py   - Loads GeoJSON files.
