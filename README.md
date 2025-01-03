@@ -1,5 +1,7 @@
-"This project processes meteorological sounding data in the GeoJSON format and generates Skew-T plots. It includes data extraction, calculations for pressure to geopotential height interpolation, and visualizations of atmospheric profiles."
+# RadioSonde
+This project processes meteorological sounding data in the GeoJSON format and generates Skew-T plots. It includes data extraction, calculations for pressure to geopotential height interpolation, and visualizations of atmospheric profiles.
 
+## Repository Structure
 The repository consists of the following directories and files:
 GeojsonData/      - Contains multiple .json files with meteorological sounding data.
 Soundings/        - Contains .png files of the generated Skew-T plots.
@@ -12,9 +14,9 @@ skewT_plot.py     - Generates the Skew-T plot and saves the output.
 main.py           - Main entry point for running the program.
 
 To install and use this repository, make sure you have Python 3.x installed. Then, clone the repository and install the necessary dependencies using:
-git clone <repository-url>
-cd <repository-directory>
-pip install -r requirements.txt
+```git clone <repository-url>```
+```cd <repository-directory>```
+```pip install -r requirements.txt```
 
 To run the program, simply execute main.py:
-python main.py <geojson-file>
+```python main.py <geojson-file>```
