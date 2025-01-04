@@ -21,10 +21,6 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     pressure_el, temperature_el = el(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC, parcel)
     pressure_ccl, temperature_ccl, _ = ccl(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC)
 
-    # Ensure LFC and EL pressures have the same units as the profile pressures
-    pressure_lfc = pressure_lfc.to(units.hPa)
-    pressure_el = pressure_el.to(units.hPa)
-
     # Interpolate heights from the geopotential height data
     height_lcl = pressure_to_height(pressure_lcl, pressures * units.hPa, heights)
     height_lfc = pressure_to_height(pressure_lfc, pressures * units.hPa, heights) if not np.isnan(pressure_lfc.magnitude) else np.nan
@@ -43,24 +39,24 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     parcel_cin = parcel[cin_indices]
 
     return (
-        np.array(pressures_short),
-        np.array(wind_u_short),
-        np.array(wind_v_short),
-        np.array(parcel),
+        pressures_short,
+        wind_u_short,
+        wind_v_short,
+        parcel,
         cape,
         cin,
-        np.array(pressure_lcl),
-        np.array(temperature_lcl),
-        np.array(height_lcl),
-        np.array(pressure_lfc),
-        np.array(temperature_lfc),
-        np.array(height_lfc),
-        np.array(pressure_el),
-        np.array(temperature_el),
-        np.array(height_el),
-        np.array(pressure_ccl),
-        np.array(temperature_ccl),
-        np.array(height_ccl),
+        pressure_lcl,
+        temperature_lcl,
+        height_lcl,
+        pressure_lfc,
+        temperature_lfc,
+        height_lfc,
+        pressure_el,
+        temperature_el,
+        height_el,
+        pressure_ccl,
+        temperature_ccl,
+        height_ccl,
         pressures_cape,
         temperatures_cape,
         parcel_cape,

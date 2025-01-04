@@ -12,6 +12,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
         pressures_cin, temperatures_cin,parcel_cin):
+        
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
     skew = SkewT(fig, rotation=45)
@@ -30,7 +31,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Shade the CAPE and CIN areas
     skew.shade_cape(pressures_cape * units.hPa, temperatures_cape * units.degC, parcel_cape)
     skew.shade_cin(pressures_cin * units.hPa, temperatures_cin * units.degC, parcel_cin)
-    
+
     # Highlight LCL, LFC, EL, and CCL on the plot
     skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', zorder=10)
     skew.ax.annotate('LCL', xy=(temperature_lcl, pressure_lcl), xytext=(-10, -4),
