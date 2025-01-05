@@ -1,4 +1,5 @@
 import os
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import metpy.calc as mpcalc
@@ -33,19 +34,19 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     skew.shade_cin(pressures_cin * units.hPa, temperatures_cin * units.degC, parcel_cin)
 
     # Highlight LCL, LFC, EL, and CCL on the plot
-    skew.ax.scatter(temperature_lcl, pressure_lcl, color='magenta', zorder=10)
+    skew.ax.scatter(temperature_lcl, pressure_lcl, color='dodgerblue', zorder=10)
     skew.ax.annotate('LCL', xy=(temperature_lcl, pressure_lcl), xytext=(-10, -4),
                  textcoords='offset points', color='black', fontsize=9, ha='right',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
-    skew.ax.scatter(temperature_lfc, pressure_lfc, color='lime', zorder=10)
+    skew.ax.scatter(temperature_lfc, pressure_lfc, color='darkorange', zorder=10)
     skew.ax.annotate('LFC', xy=(temperature_lfc, pressure_lfc), xytext=(10, -4),
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
-    skew.ax.scatter(temperature_el, pressure_el, color='cyan', zorder=10)
+    skew.ax.scatter(temperature_el, pressure_el, color='chocolate', zorder=10)
     skew.ax.annotate('EL', xy=(temperature_el, pressure_el), xytext=(10, -4),
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
-    skew.ax.scatter(temperature_ccl, pressure_ccl, color='orange', zorder=10)
+    skew.ax.scatter(temperature_ccl, pressure_ccl, color='limegreen', zorder=10)
     skew.ax.annotate('CCL', xy=(temperature_ccl, pressure_ccl), xytext=(10, -4),
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
@@ -152,11 +153,17 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     intervals = np.array([0, 1, 3, 5, 8, 10])
     colors = ['tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:pink']
 
+    component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
+    component_range = math.ceil(component_range / 5) * 5
+    print(component_range)
+    valid_increments = np.array([5, 10, 15, 20])
+    grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
+    
     # Add hodograph on the right
     gs = GridSpec(1, 2, left=0.5, bottom=0.5, right=0.8, top=1.13, wspace=0, hspace=0)
     ax_hodo = fig.add_subplot(gs[0, 1])
-    h = Hodograph(ax_hodo, component_range=30.)
-    h.add_grid(increment=10)
+    h = Hodograph(ax_hodo, component_range=component_range)
+    h.add_grid(increment=grid_increment)
     l = h.plot_colormapped(
         wind_u[mask],
         wind_v[mask],
