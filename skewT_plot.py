@@ -155,7 +155,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
     component_range = math.ceil(component_range / 5) * 5
-    print(component_range)
     valid_increments = np.array([5, 10, 15, 20])
     grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
     
