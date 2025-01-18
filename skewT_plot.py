@@ -57,7 +57,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
             lambda h: mpcalc.height_to_pressure_std(units.Quantity(h, 'km')).m
             )
         )
-    secax.yaxis.set_major_locator(plt.FixedLocator([0, 1, 3, 6, 9, 12, 15]))
+    secax.yaxis.set_major_locator(plt.FixedLocator(np.arange(0, 17)))
     secax.yaxis.set_minor_locator(plt.NullLocator())
     secax.yaxis.set_major_formatter(plt.ScalarFormatter())
     secax.set_ylabel('Height (km)')
