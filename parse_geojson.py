@@ -1,5 +1,5 @@
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Parse the GeoJSON data for Skew-T plot
 def parse_geojson(data):
@@ -26,9 +26,8 @@ def parse_geojson(data):
     lon = data['properties']['lon']
 
     # Unix timestamp
-    timestamp = data['features'][0]['properties']['time']
+    timestamp = data['properties']['syn_timestamp']
     timestamp = datetime.utcfromtimestamp(timestamp)  # Convert the timestamp to a datetime object
-    timestamp += timedelta(hours=1)
 
     return (
         np.array(pressures),
