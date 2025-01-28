@@ -69,12 +69,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         frameon=True,
     )
     
-    city = get_city_name(lat, lon)
-    city = city.upper()
+    location = get_city_name(lat, lon)
 
     # Add a title with aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
-    skew.ax.set_title(f'Skew-T Log-P, {city}', loc='left', fontsize=14)
+    skew.ax.set_title(f'Skew-T Log-P, {location}', loc='left', fontsize=14)
     timestamp_plt = timestamp.strftime('%b %d, %Y %H:%M') + 'Z' # Format datetime object to string
     skew.ax.set_title(timestamp_plt, loc='center', fontsize=14)
     skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)

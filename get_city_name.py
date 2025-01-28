@@ -7,17 +7,20 @@ def get_city_name(lat, lon):
     if location and location.raw.get('address'):
         address = location.raw['address']
 
-        city = address.get('city')
+        city = address.get('city') or address.get('town') or address.get('village') or address.get('county')
+        country = address.get('country_code').upper()
+
         if city:
-            return city
+            city_name = city.lower().strip()  # Make sure to strip any extra spaces
+
+            if "town of" in city_name:
+                city_name = city_name.replace("town of", "").strip()
+                return f'{city_name.upper()}, {country}'
+            
+            if "village of" in city_name:
+                city_name = city_name.replace("village of", "").strip()
+                return f'{city_name.upper()}, {country}'
+
+            return f'{city_name.upper()}, {country}'
         
-        locality = address.get('town') or address.get('village') or address.get('county')
-        if locality:
-            locality_name = locality.lower()
-            if "town of" in locality_name:
-                return locality_name.replace("town of", "").strip()
-            if "village of" in locality_name:
-                return locality_name.replace("village of", "").strip()
-            return locality
-        
-    return 'Unknown City'
+    return 'Unknown Location'
