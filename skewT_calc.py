@@ -1,4 +1,5 @@
 import numpy as np
+import metpy
 from metpy.units import units
 from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl
 from pressure_to_height import pressure_to_height
@@ -38,6 +39,12 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     temperatures_cin = temperatures[cin_indices]
     parcel_cin = parcel[cin_indices]
 
+    # Bunkers storm motion
+    bunkers_motion = metpy.calc.bunkers_storm_motion(pressures * units.hPa, wind_u * units('m/s'), wind_v * units('m/s'), heights * units.m)
+    rm_storm, lm_storm, mean_wind = bunkers_motion
+    u_storm = rm_storm[0].magnitude
+    v_storm = rm_storm[1].magnitude
+
     return (
         pressures_short, wind_u_short, wind_v_short,
         parcel, cape, cin,
@@ -46,5 +53,6 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl,
         pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin, parcel_cin
+        pressures_cin, temperatures_cin, parcel_cin,
+        u_storm, v_storm
     )

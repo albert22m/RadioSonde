@@ -12,7 +12,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin,parcel_cin):
+        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm):
         
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
@@ -51,7 +51,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
 
-    secax = skew.ax.secondary_yaxis(1.07,
+    secax = skew.ax.secondary_yaxis(1.05,
         functions=(
             lambda p: mpcalc.pressure_to_height_std(units.Quantity(p, 'hPa')).m_as('km'),
             lambda h: mpcalc.height_to_pressure_std(units.Quantity(h, 'km')).m
@@ -81,7 +81,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
-        0.90, 0.93,
+        0.84, 0.58,
         r'$\bf{Instability\ Indices}$',
         fontsize=13,
         va='top',
@@ -90,7 +90,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     )
 
     fig.text(
-        0.85, 0.88,
+        0.76, 0.53,
         'CAPE\nCIN\nLCL\nLFC\nEL\nCCL',
         fontsize=12,
         va='top',
@@ -108,44 +108,19 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     )
 
     fig.text(
-        0.95, 0.88,
+        0.92, 0.53,
         text1,
         fontsize=12,
         va='top',
         ha='right',
         linespacing=1.75
-    ) 
-
-    fig.text(
-        0.62, 0.50,
-        r'$\bf{Convective\ Available\ Potential\ Energy\ (CAPE):\ }$'
-        'is a measure of the amount of\nenergy available for convection in the atmosphere. It indicates the potential for\n'
-        'thunderstorms and severe weather by quantifying the buoyancy of air parcels.\n\n'
-        r'$\bf{Convective\ Inhibition\ (CIN):\ }$'
-        'refers to the energy that prevents air parcels from\nrising and developing convection. It represents a layer of the'
-        ' atmosphere where the\ntemperature increases with height, inhibiting the upward motion of air.\n\n'
-        r'$\bf{Lifted\ Condensation\ Level\ (LCL):\ }$'
-        'is the height where unsaturated air from the\nsurface will cool and reach saturation. This makes it the level'
-        ' of the cloud base\nwhen fronts move on.\n\n'
-        r'$\bf{Level\ of\ Free\ Convection\ (LFC):\ }$'
-        'is the altitude at which a lifted air parcel\nbecomes buoyant enough to continue rising freely and accelerate upward,'
-        '\nforming a thunderstorm.\n\n'
-        r'$\bf{Equilibrium\ Level\ (EL):\ }$'
-        'is the altitude at which a rising air parcel becomes cooler\nthan the surrounding air and stops rising. The EL is'
-        ' often associated with the top of\na thunderstorm cloud.\n\n'
-        r'$\bf{Convective\ Condensation\ Level\ (CCL):\ }$'
-        'is the height at which air from the\nsurface will become saturated when lifted convectively.\n\n'
-        ,
-        fontsize=12,
-        va='top',
-        ha='left'
     )
 
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=12)
     plt.ylabel('Pressure (hPa)', fontsize=12)
 
-    fig.subplots_adjust(left=-0.4, bottom=0.07, right=1, top=0.95, wspace=0, hspace=0)
+    fig.subplots_adjust(left=-0.3, bottom=0.07, right=1, top=0.95, wspace=0, hspace=0)
 
     #  Calculate above ground level (AGL) heights
     agl = (heights - heights[0]) / 1000
@@ -159,7 +134,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
     
     # Add hodograph on the right
-    gs = GridSpec(1, 2, left=0.5, bottom=0.5, right=0.8, top=1.13, wspace=0, hspace=0)
+    gs = GridSpec(1, 2, left=0.49, bottom=0.475, right=0.99, top=1.105, wspace=0, hspace=0)
     ax_hodo = fig.add_subplot(gs[0, 1])
     h = Hodograph(ax_hodo, component_range=component_range)
     h.add_grid(increment=grid_increment)
@@ -170,13 +145,27 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         intervals=intervals,
         colors=colors
     )
+
+    # Add storm motion vector to the hodograph
+    ax_hodo.quiver(
+        0, 0,  # Start at origin
+        u_storm, v_storm,  # Storm motion vector
+        angles='xy', scale_units='xy', scale=1, color='grey', width=0.01
+    )
+
     # Add the colorbar with custom size
-    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.38)  # shrink value controls size
+    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.507)  # shrink value controls size
     cbar.set_label('Height (km)', fontsize=12)
     cbar.ax.tick_params(labelsize=10)
 
-    ax_hodo.set_xlabel('Wind Speed (m/s)', fontsize=12)
-    ax_hodo.set_ylabel('Wind Speed (m/s)', fontsize=12)
+    ax_hodo.text(
+    0.02, 0.95,  # Position: horizontal, vertical
+    'Wind Speed (m/s)',
+    fontsize=12,
+    rotation=0,
+    ha='left', va='center',
+    transform=ax_hodo.transAxes  # Use axis coordinates
+    )
 
     # Save figure
     output_dir = "Soundings"
@@ -188,7 +177,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     timestamp_fig = timestamp.strftime('%Y%m%d%H')
     output_filename = os.path.join(output_dir, f"{output_filename}_{timestamp_fig}.png")
     
-    fig.set_size_inches(1920 / 96, 957 / 96)
+    fig.set_size_inches(1534 / 96, 957 / 96)
     plt.savefig(output_filename, dpi = 96, format='png')
 
     #plt.show(block=False)
