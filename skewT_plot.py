@@ -17,6 +17,14 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
     skew = SkewT(fig, rotation=45)
+    
+    skew.ax.yaxis.set_major_locator(plt.FixedLocator(np.arange(2, 11)*100))
+    skew.ax.set_xlim(left=-39, right=49)
+
+    skew.ax.tick_params(axis='x', which='major', direction='in', pad=-17, labelsize=15)
+    skew.ax.tick_params(axis='y', which='major', direction='in', pad=-7, labelsize=15)
+    for label in skew.ax.get_yticklabels():
+        label.set_horizontalalignment('left')
 
     # Plot the data
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1)
@@ -51,7 +59,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
                  textcoords='offset points', color='black', fontsize=9, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
 
-    secax = skew.ax.secondary_yaxis(1.05,
+    # Labels and other adjustments
+    plt.xlabel('Temperature (°C)', fontsize=18)
+    plt.ylabel('Pressure (hPa)', fontsize=18)
+
+    secax = skew.ax.secondary_yaxis(1.03,
         functions=(
             lambda p: mpcalc.pressure_to_height_std(units.Quantity(p, 'hPa')).m_as('km'),
             lambda h: mpcalc.height_to_pressure_std(units.Quantity(h, 'km')).m
@@ -60,38 +72,102 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     secax.yaxis.set_major_locator(plt.FixedLocator(np.arange(0, 17)))
     secax.yaxis.set_minor_locator(plt.NullLocator())
     secax.yaxis.set_major_formatter(plt.ScalarFormatter())
-    secax.set_ylabel('Height (km)')
+    secax.tick_params(axis='y', which='major', labelsize=15)
+    secax.set_ylabel('Height (km)', fontsize=18)
     
     # Add a legend outside the plot
     skew.ax.legend(
         loc='upper left',
-        fontsize=10,
+        fontsize=15,
         frameon=True,
     )
+
+    fig.subplots_adjust(left=-0.33, bottom=0.04, right=0.97, top=0.92, wspace=0, hspace=0)
     
     location = get_city_name(lat, lon)
 
     # Add a title with aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
-    skew.ax.set_title(f'Skew-T Log-P, {location}', loc='left', fontsize=14)
+    skew.ax.set_title(f'Skew-T Log-P, {location}', loc='left', fontsize=22)
     timestamp_plt = timestamp.strftime('%b %d, %Y %H:%M') + 'Z' # Format datetime object to string
-    skew.ax.set_title(timestamp_plt, loc='center', fontsize=14)
-    skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=14)
+    skew.ax.set_title(timestamp_plt, loc='center', fontsize=22)
+    skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=22)
+
+    #  Calculate above ground level (AGL) heights
+    agl = (heights - heights[0]) / 1000
+    mask = agl <= 10   # Limit to heights below 10 km
+    intervals = np.array([0, 1, 3, 5, 8, 10])
+    colors = ['tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:pink']
+
+    component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
+    component_range = math.ceil(component_range / 5) * 5
+    valid_increments = np.array([5, 10, 15, 20])
+    grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
+    
+    # Add hodograph on the right
+    gs = GridSpec(1, 2, left=0.35, bottom=0.4745, right=0.99, top=0.9545, wspace=0, hspace=0)
+    ax_hodo = fig.add_subplot(gs[0, 1])
+    h = Hodograph(ax_hodo, component_range=component_range)
+    h.add_grid(increment=grid_increment)
+    l = h.plot_colormapped(
+        wind_u[mask],
+        wind_v[mask],
+        agl[mask],
+        intervals=intervals,
+        colors=colors
+    )
+
+    # Set limits with a margin of 0.1
+    ax_hodo.set_xlim(-component_range + 0.1, component_range - 0.1)
+    ax_hodo.set_ylim(-component_range + 0.1, component_range - 0.1)
+
+    # Add storm motion vector to the hodograph
+    ax_hodo.quiver(
+        0, 0,  # Start at origin
+        u_storm, v_storm,  # Storm motion vector
+        angles='xy', scale_units='xy', scale=1, color='grey', width=0.01
+    )
+    ax_hodo.tick_params(axis='x', which='major', direction='in', pad=-17, labelsize=15)
+    ax_hodo.tick_params(axis='y', which='major', direction='in', pad=-5, labelsize=15)
+    for label in ax_hodo.get_yticklabels():
+        label.set_horizontalalignment('left')
+
+    # Add the colorbar with custom size
+    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.855)  # shrink value controls size
+    cbar.set_label('Height (km)', fontsize=18)
+    cbar.ax.tick_params(labelsize=15)
+
+    ax_hodo.text(
+    0.02, 0.95,  # Position: horizontal, vertical
+    'Wind Speed (m/s)',
+    fontsize=18,
+    rotation=0,
+    ha='left', va='center',
+    transform=ax_hodo.transAxes  # Use axis coordinates
+    )
+
+    fig.text(
+        0.025, 0.98,
+        r'$\bf{RAOB\ OBSERVED\ VERTICAL\ PROFILE}$',
+        fontsize=30,
+        va='top',
+        ha='left'
+    )
 
     # Add CAPE, CIN, LCL, LFC, EL, and CCL information
     fig.text(
-        0.84, 0.58,
+        0.8, 0.38,
         r'$\bf{Instability\ Indices}$',
-        fontsize=13,
+        fontsize=18,
         va='top',
         ha='center',
         linespacing=1.75
     )
 
     fig.text(
-        0.76, 0.53,
+        0.72, 0.33,
         'CAPE\nCIN\nLCL\nLFC\nEL\nCCL',
-        fontsize=12,
+        fontsize=18,
         va='top',
         ha='left',
         linespacing=1.75
@@ -107,63 +183,12 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     )
 
     fig.text(
-        0.92, 0.53,
+        0.88, 0.33,
         text1,
-        fontsize=12,
+        fontsize=18,
         va='top',
         ha='right',
         linespacing=1.75
-    )
-
-    # Labels and other adjustments
-    plt.xlabel('Temperature (°C)', fontsize=12)
-    plt.ylabel('Pressure (hPa)', fontsize=12)
-
-    fig.subplots_adjust(left=-0.3, bottom=0.07, right=1, top=0.95, wspace=0, hspace=0)
-
-    #  Calculate above ground level (AGL) heights
-    agl = (heights - heights[0]) / 1000
-    mask = agl <= 10   # Limit to heights below 10 km
-    intervals = np.array([0, 1, 3, 5, 8, 10])
-    colors = ['tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:pink']
-
-    component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
-    component_range = math.ceil(component_range / 5) * 5
-    valid_increments = np.array([5, 10, 15, 20])
-    grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
-    
-    # Add hodograph on the right
-    gs = GridSpec(1, 2, left=0.49, bottom=0.475, right=0.99, top=1.105, wspace=0, hspace=0)
-    ax_hodo = fig.add_subplot(gs[0, 1])
-    h = Hodograph(ax_hodo, component_range=component_range)
-    h.add_grid(increment=grid_increment)
-    l = h.plot_colormapped(
-        wind_u[mask],
-        wind_v[mask],
-        agl[mask],
-        intervals=intervals,
-        colors=colors
-    )
-
-    # Add storm motion vector to the hodograph
-    ax_hodo.quiver(
-        0, 0,  # Start at origin
-        u_storm, v_storm,  # Storm motion vector
-        angles='xy', scale_units='xy', scale=1, color='grey', width=0.01
-    )
-
-    # Add the colorbar with custom size
-    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.507)  # shrink value controls size
-    cbar.set_label('Height (km)', fontsize=12)
-    cbar.ax.tick_params(labelsize=10)
-
-    ax_hodo.text(
-    0.02, 0.95,  # Position: horizontal, vertical
-    'Wind Speed (m/s)',
-    fontsize=12,
-    rotation=0,
-    ha='left', va='center',
-    transform=ax_hodo.transAxes  # Use axis coordinates
     )
 
     # Save figure
@@ -176,7 +201,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     timestamp_fig = timestamp.strftime('%Y%m%d%H')
     output_filename = os.path.join(output_dir, f"{output_filename}_{timestamp_fig}.png")
     
-    fig.set_size_inches(1534 / 96, 957 / 96)
+    fig.set_size_inches(2455 / 96,1532 / 96)
     plt.savefig(output_filename, dpi = 96, format='png')
 
     #plt.show(block=False)
