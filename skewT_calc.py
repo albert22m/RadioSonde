@@ -1,7 +1,7 @@
 import numpy as np
 import metpy
 from metpy.units import units
-from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl
+from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index, vertical_totals, total_totals_index, storm_relative_helicity
 from pressure_to_height import pressure_to_height
 
 # Plot the Skew-T diagram
@@ -45,6 +45,19 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     u_storm = rm_storm[0].magnitude
     v_storm = rm_storm[1].magnitude
 
+    # Lifting Index (LI), Vertical Totals Index (VT), Total Totals Index (TT)
+    li = lifted_index(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC).magnitude[0]
+    vt = vertical_totals(pressures * units.hPa, temperatures * units.degC).magnitude
+    tt = total_totals_index(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC).magnitude
+
+    # Storm Relative Winds
+    u_storm_relative = wind_u_short - u_storm
+    v_storm_relative = wind_v_short - v_storm
+
+    # Compute Storm Relative Helicity (SRH)
+    heights_short = heights[valid_indices]
+    srh = storm_relative_helicity(heights_short * units.m, u_storm_relative * units.meter/units.second, v_storm_relative * units.meter/units.second, 3000 * units.meter)[0].magnitude
+
     return (
         pressures_short, wind_u_short, wind_v_short,
         parcel, cape, cin,
@@ -54,5 +67,5 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressure_ccl, temperature_ccl, height_ccl,
         pressures_cape, temperatures_cape, parcel_cape,
         pressures_cin, temperatures_cin, parcel_cin,
-        u_storm, v_storm
+        u_storm, v_storm, li, vt, tt, srh
     )

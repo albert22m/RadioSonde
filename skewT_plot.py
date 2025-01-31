@@ -12,7 +12,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm):
+        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh):
         
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
@@ -44,19 +44,19 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     # Highlight LCL, LFC, EL, and CCL on the plot
     skew.ax.scatter(temperature_lcl, pressure_lcl, color='dodgerblue', zorder=10)
     skew.ax.annotate('LCL', xy=(temperature_lcl, pressure_lcl), xytext=(-10, -4),
-                 textcoords='offset points', color='black', fontsize=9, ha='right',
+                 textcoords='offset points', color='black', fontsize=12, ha='right',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
     skew.ax.scatter(temperature_lfc, pressure_lfc, color='darkorange', zorder=10)
     skew.ax.annotate('LFC', xy=(temperature_lfc, pressure_lfc), xytext=(10, -4),
-                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 textcoords='offset points', color='black', fontsize=12, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
     skew.ax.scatter(temperature_el, pressure_el, color='chocolate', zorder=10)
     skew.ax.annotate('EL', xy=(temperature_el, pressure_el), xytext=(10, -4),
-                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 textcoords='offset points', color='black', fontsize=12, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
     skew.ax.scatter(temperature_ccl, pressure_ccl, color='limegreen', zorder=10)
     skew.ax.annotate('CCL', xy=(temperature_ccl, pressure_ccl), xytext=(10, -4),
-                 textcoords='offset points', color='black', fontsize=9, ha='left',
+                 textcoords='offset points', color='black', fontsize=12, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
 
     # Labels and other adjustments
@@ -105,7 +105,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
     
     # Add hodograph on the right
-    gs = GridSpec(1, 2, left=0.35, bottom=0.4745, right=0.99, top=0.9545, wspace=0, hspace=0)
+    gs = GridSpec(1, 2, left=0.35, bottom=0.4585, right=1, top=0.9385, wspace=0, hspace=0)
     ax_hodo = fig.add_subplot(gs[0, 1])
     h = Hodograph(ax_hodo, component_range=component_range)
     h.add_grid(increment=grid_increment)
@@ -133,16 +133,16 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         label.set_horizontalalignment('left')
 
     # Add the colorbar with custom size
-    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0.05, shrink=0.855)  # shrink value controls size
+    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0, shrink=0.922, aspect=40)  # shrink (size), aspect(thickness)
     cbar.set_label('Height (km)', fontsize=18)
     cbar.ax.tick_params(labelsize=15)
 
     ax_hodo.text(
-    0.02, 0.95,  # Position: horizontal, vertical
+    0.5, 1.022,  # Position: horizontal, vertical
     'Wind Speed (m/s)',
     fontsize=18,
     rotation=0,
-    ha='left', va='center',
+    ha='center', va='center',
     transform=ax_hodo.transAxes  # Use axis coordinates
     )
 
@@ -154,9 +154,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         ha='left'
     )
 
-    # Add CAPE, CIN, LCL, LFC, EL, and CCL information
+    # Add numerical information
     fig.text(
-        0.8, 0.38,
+        0.74, 0.43,  # Position (X, Y) for table title
         r'$\bf{Instability\ Indices}$',
         fontsize=18,
         va='top',
@@ -164,32 +164,124 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         linespacing=1.75
     )
 
+    # Define the table rows (left column: indices, center column: values, right column: units)
+    table_labels = [
+        'CAPE',
+        'CIN',
+        'LI',
+        'VT',
+        'TT',
+        'SRH-3 km'
+    ]
+    table_values = [
+        f'{cape.m:.2f}',
+        f'{cin.m:.2f}',
+        f'{li:.0f}',
+        f'{vt:.0f}',
+        f'{tt:.0f}',
+        f'{srh:.0f}'
+    ]
+    table_units = [
+        'J/kg',
+        'J/kg',
+        'Δ°C',
+        'Δ°C',
+        'Δ°C',
+        'm²/s²'
+    ]
+
+    # Set the table position (starting X, Y coordinates)
+    table_x_left = 0.685  # X position for labels
+    table_x_center = table_x_left + 0.08  # X position for values
+    table_x_right = table_x_center + 0.01  # X position for units
+    table_y_start = 0.38  # Starting Y position
+    line_spacing = 0.035  # Vertical spacing between rows
+
+    # Render the table rows
+    for i, (label, value, unit) in enumerate(zip(table_labels, table_values, table_units)):
+        fig.text(
+            table_x_left, table_y_start - i * line_spacing,  # Position for labels
+            label,
+            fontsize=18,
+            va='top',
+            ha='left'
+        )
+        fig.text(
+            table_x_center, table_y_start - i * line_spacing,  # Position for values
+            value,
+            fontsize=18,
+            va='top',
+            ha='right'
+        )
+        fig.text(
+            table_x_right, table_y_start - i * line_spacing,  # Position for units
+            unit,
+            fontsize=18,
+            va='top',
+            ha='left'
+        )
+
     fig.text(
-        0.72, 0.33,
-        'CAPE\nCIN\nLCL\nLFC\nEL\nCCL',
+        0.89, 0.43,  # Position (X, Y) for table title
+        r'$\bf{Profile\ Parameters}$',
         fontsize=18,
         va='top',
-        ha='left',
+        ha='center',
         linespacing=1.75
     )
 
-    text1 = (
-        f'{cape.m:.2f} J/kg\n'
-        f'{cin.m:.2f} J/kg\n'
-        f'{height_lcl:.1f} m\n'
-        f'{"N/A" if np.isnan(height_lfc) else f"{height_lfc:.1f} m"}\n'
-        f'{"N/A" if np.isnan(height_el) else f"{height_el:.1f} m"}\n'
-        f'{height_ccl:.1f} m'
-    )
+    table_labels = [
+        'PWAT',
+        'LCL',
+        'LFC',
+        'EL',
+        'CCL'
+    ]
+    table_values = [
+        'N/A',
+        f'{height_lcl:.1f}',
+        'N/A' if np.isnan(height_lfc) else f'{height_lfc:.1f}',
+        'N/A' if np.isnan(height_el) else f'{height_el:.1f}',
+        f'{height_ccl:.1f}'
+    ]
+    table_units = [
+        'mm',
+        'm',
+        'm',
+        'm',
+        'm'
+    ]
 
-    fig.text(
-        0.88, 0.33,
-        text1,
-        fontsize=18,
-        va='top',
-        ha='right',
-        linespacing=1.75
-    )
+    # Set the table position (starting X, Y coordinates)
+    table_x_left = 0.835  # X position for labels
+    table_x_center = table_x_left + 0.08  # X position for values
+    table_x_right = table_x_center + 0.01  # X position for units
+    table_y_start = 0.38  # Starting Y position
+    line_spacing = 0.035  # Vertical spacing between rows
+
+    # Render the table rows
+    for i, (label, value, unit) in enumerate(zip(table_labels, table_values, table_units)):
+        fig.text(
+            table_x_left, table_y_start - i * line_spacing,  # Position for labels
+            label,
+            fontsize=18,
+            va='top',
+            ha='left'
+        )
+        fig.text(
+            table_x_center, table_y_start - i * line_spacing,  # Position for values
+            value,
+            fontsize=18,
+            va='top',
+            ha='right'
+        )
+        fig.text(
+            table_x_right, table_y_start - i * line_spacing,  # Position for units
+            unit,
+            fontsize=18,
+            va='top',
+            ha='left'
+        )
 
     # Save figure
     output_dir = "Soundings"
