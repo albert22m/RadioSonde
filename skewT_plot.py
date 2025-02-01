@@ -178,6 +178,13 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     ax_map.set_yticklabels([])
 
     # Add text ----------------------------------------------------------------------------------------------------------------
+    fig.lines.append(plt.Line2D([0.675, 0.675], [0.477, 0.04],
+                            transform=fig.transFigure, color='black', linewidth=0.8))
+    fig.lines.append(plt.Line2D([0.958, 0.958], [0.477, 0.04],
+                            transform=fig.transFigure, color='black', linewidth=0.8))
+    fig.lines.append(plt.Line2D([0.958, 0.675], [0.04, 0.04],
+                            transform=fig.transFigure, color='black', linewidth=0.8))
+        
     ax_hodo.text(
     0.5, 1.022,  # Position: horizontal, vertical
     'Wind Speed (m/s)',
