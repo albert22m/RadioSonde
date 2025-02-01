@@ -1,7 +1,7 @@
 import numpy as np
 import metpy
 from metpy.units import units
-from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index, vertical_totals, total_totals_index, storm_relative_helicity
+from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index, vertical_totals, total_totals_index, storm_relative_helicity, precipitable_water
 from pressure_to_height import pressure_to_height
 
 # Plot the Skew-T diagram
@@ -11,6 +11,7 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     pressures_short = pressures[valid_indices]
     wind_u_short = wind_u[valid_indices]
     wind_v_short = wind_v[valid_indices]
+    heights_short = heights[valid_indices]
 
     # Calculate CAPE and CIN
     parcel = parcel_profile(pressures * units.hPa, temperatures[0] * units.degC, dewpoints[0] * units.degC)
@@ -55,8 +56,10 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     v_storm_relative = wind_v_short - v_storm
 
     # Compute Storm Relative Helicity (SRH)
-    heights_short = heights[valid_indices]
-    srh = storm_relative_helicity(heights_short * units.m, u_storm_relative * units.meter/units.second, v_storm_relative * units.meter/units.second, 3000 * units.meter)[0].magnitude
+    srh = storm_relative_helicity(heights * units.m, wind_u * units('m/s'), wind_v * units('m/s'), depth=3 * units.km, storm_u=u_storm * units('m/s'), storm_v=v_storm * units('m/s'))[2].magnitude
+
+    # Precipitable water
+    pwat = precipitable_water(pressures * units.hPa, dewpoints * units.degC).magnitude
 
     return (
         pressures_short, wind_u_short, wind_v_short,
@@ -67,5 +70,5 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         pressure_ccl, temperature_ccl, height_ccl,
         pressures_cape, temperatures_cape, parcel_cape,
         pressures_cin, temperatures_cin, parcel_cin,
-        u_storm, v_storm, li, vt, tt, srh
+        u_storm, v_storm, li, vt, tt, srh, pwat
     )

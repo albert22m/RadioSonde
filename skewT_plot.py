@@ -8,11 +8,11 @@ from metpy.units import units
 from matplotlib.gridspec import GridSpec
 from get_city_name import get_city_name
 
-def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp, filename,
+def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, timestamp, filename,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh):
+        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh, pwat):
         
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
@@ -91,7 +91,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
     skew.ax.set_title(f'Skew-T Log-P, {location}', loc='left', fontsize=22)
     timestamp_plt = timestamp.strftime('%b %d, %Y %H:%M') + 'Z' # Format datetime object to string
     skew.ax.set_title(timestamp_plt, loc='center', fontsize=22)
-    skew.ax.set_title(f'Lat = {lat:.2f}° Lon = {lon:.2f}°', loc='right', fontsize=22)
+    skew.ax.set_title(f'{station_id} | {lat:.2f}°, {lon:.2f}°', loc='right', fontsize=22)
 
     #  Calculate above ground level (AGL) heights
     agl = (heights - heights[0]) / 1000
@@ -127,6 +127,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         u_storm, v_storm,  # Storm motion vector
         angles='xy', scale_units='xy', scale=1, color='grey', width=0.01
     )
+    ax_hodo.annotate('RM', xy=(u_storm, v_storm), xytext=(5, 0), weight='bold',
+                 textcoords='offset points', color='grey', fontsize=15, ha='left', va='center')
+
     ax_hodo.tick_params(axis='x', which='major', direction='in', pad=-17, labelsize=15)
     ax_hodo.tick_params(axis='y', which='major', direction='in', pad=-5, labelsize=15)
     for label in ax_hodo.get_yticklabels():
@@ -238,7 +241,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat,
         'CCL'
     ]
     table_values = [
-        'N/A',
+        f'{pwat:.0f}',
         f'{height_lcl:.1f}',
         'N/A' if np.isnan(height_lfc) else f'{height_lfc:.1f}',
         'N/A' if np.isnan(height_el) else f'{height_el:.1f}',

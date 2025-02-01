@@ -29,6 +29,9 @@ def parse_geojson(data):
     timestamp = data['properties']['syn_timestamp']
     timestamp = datetime.utcfromtimestamp(timestamp)  # Convert the timestamp to a datetime object
 
+    # Station ID
+    station_id = data['properties']['station_id']
+
     return (
         np.array(pressures),
         np.array(temperatures),
@@ -36,6 +39,7 @@ def parse_geojson(data):
         np.array(wind_u),
         np.array(wind_v),
         np.array(heights),
+        station_id,
         lat,
         lon,
         timestamp
