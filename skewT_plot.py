@@ -7,6 +7,8 @@ from metpy.plots import SkewT, Hodograph
 from metpy.units import units
 from matplotlib.gridspec import GridSpec
 from get_city_name import get_city_name
+import geopandas as gpd
+from matplotlib.patches import Circle
 
 def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, timestamp, filename,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
@@ -93,7 +95,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     skew.ax.set_title(timestamp_plt, loc='center', fontsize=22)
     skew.ax.set_title(f'{station_id} | {lat:.2f}°, {lon:.2f}°', loc='right', fontsize=22)
 
-    #  Calculate above ground level (AGL) heights
+    #  Calculate above ground level (AGL) heights -----------------------------------------------------------------------------
     agl = (heights - heights[0]) / 1000
     mask = agl <= 10   # Limit to heights below 10 km
     intervals = np.array([0, 1, 3, 5, 8, 10])
@@ -140,6 +142,42 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     cbar.set_label('Height (km)', fontsize=18)
     cbar.ax.tick_params(labelsize=15)
 
+    # Cartographic map --------------------------------------------------------------------------------------------------------
+    # Parameters: left, bottom, width, height
+    ax_map = fig.add_axes([0.4515, 0.72, 0.2, 0.2])
+
+    # Set the working directory to the location of the main.py script
+    main_dir = os.path.dirname(os.path.realpath(__file__))
+    admin1_path = os.path.join(main_dir, 'shapefiles', 'ne_10m_admin_1_states_provinces', 'ne_10m_admin_1_states_provinces.shp')
+    admin2_path = os.path.join(main_dir, 'shapefiles', 'ne_10m_admin_2_counties', 'ne_10m_admin_2_counties.shp')
+
+    # Load shapefiles
+    admin1 = gpd.read_file(admin1_path)
+    admin2 = gpd.read_file(admin2_path)
+
+    admin1.boundary.plot(ax=ax_map, linewidth=1, color='black', alpha=1)
+    admin2.boundary.plot(ax=ax_map, linewidth=0.5, color='black', alpha=0.5)
+
+    ax_map.set_aspect('equal', adjustable='box')
+
+    # Automatically zoom to the specific point with a buffer around i
+    buffer = 2  # Buffer size (controls the zoom level)
+    ax_map.set_xlim(lon - buffer, lon + buffer)
+    ax_map.set_ylim(lat - buffer, lat + buffer)
+
+    # Draw marker
+    circle = Circle((lon, lat), radius=0.075, color='black', fill=False, linewidth=1)
+    ax_map.add_patch(circle)
+    ax_map.plot([lon - 0.1, lon + 0.1], [lat, lat], color='black', linewidth=1)  # Horizontal line
+    ax_map.plot([lon, lon], [lat - 0.1, lat + 0.1], color='black', linewidth=1)  # Vertical line
+
+    # Remove axis ticks and labels for the map
+    ax_map.set_xticks([])
+    ax_map.set_yticks([])
+    ax_map.set_xticklabels([])
+    ax_map.set_yticklabels([])
+
+    # Add text ----------------------------------------------------------------------------------------------------------------
     ax_hodo.text(
     0.5, 1.022,  # Position: horizontal, vertical
     'Wind Speed (m/s)',
