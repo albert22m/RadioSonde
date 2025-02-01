@@ -215,8 +215,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         'SRH-3 km'
     ]
     table_values = [
-        f'{cape.m:.2f}',
-        f'{cin.m:.2f}',
+        f'{cape.m:.1f}',
+        f'{cin.m:.1f}',
         f'{li:.0f}',
         f'{vt:.0f}',
         f'{tt:.0f}',
@@ -280,10 +280,10 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     ]
     table_values = [
         f'{pwat:.0f}',
-        f'{height_lcl:.1f}',
-        'N/A' if np.isnan(height_lfc) else f'{height_lfc:.1f}',
-        'N/A' if np.isnan(height_el) else f'{height_el:.1f}',
-        f'{height_ccl:.1f}'
+        f'{height_lcl:.0f}',
+        'N/A' if np.isnan(height_lfc) else f'{height_lfc:.0f}',
+        'N/A' if np.isnan(height_el) else f'{height_el:.0f}',
+        f'{height_ccl:.0f}'
     ]
     table_units = [
         'mm',
