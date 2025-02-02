@@ -22,8 +22,7 @@ def main():
          pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el, pressure_ccl, temperature_ccl, height_ccl,
          pressures_cape, temperatures_cape, parcel_cape, pressures_cin, temperatures_cin, parcel_cin, u_storm, v_storm,
          li, vt, tt, srh, pwat) = skewT_calc(
-            pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, location, timestamp, filename
-        )
+            pressures, temperatures, dewpoints, wind_u, wind_v, heights)
         
         skewT_plot(
             pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp, filename,
