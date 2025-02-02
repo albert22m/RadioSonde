@@ -1,5 +1,6 @@
 import numpy as np
 from datetime import datetime
+from get_city_name import get_city_name
 
 # Parse the GeoJSON data for Skew-T plot
 def parse_geojson(data):
@@ -25,6 +26,8 @@ def parse_geojson(data):
     lat = data['properties']['lat']
     lon = data['properties']['lon']
 
+    location = get_city_name(lat, lon)
+
     # Unix timestamp
     timestamp = data['properties']['syn_timestamp']
     timestamp = datetime.utcfromtimestamp(timestamp)  # Convert the timestamp to a datetime object
@@ -42,5 +45,6 @@ def parse_geojson(data):
         station_id,
         lat,
         lon,
+        location,
         timestamp
     )

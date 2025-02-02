@@ -6,11 +6,10 @@ import metpy.calc as mpcalc
 from metpy.plots import SkewT, Hodograph
 from metpy.units import units
 from matplotlib.gridspec import GridSpec
-from get_city_name import get_city_name
 import geopandas as gpd
 from matplotlib.patches import Circle
 
-def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, timestamp, filename,
+def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp, filename,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
@@ -85,8 +84,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     )
 
     fig.subplots_adjust(left=-0.33, bottom=0.04, right=0.97, top=0.92, wspace=0, hspace=0)
-    
-    location = get_city_name(lat, lon)
 
     # Add a title with aligned sections
     fig.suptitle('', x=0.5, y=0.97)  # Empty main title to avoid overlap
@@ -145,15 +142,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     # Cartographic map --------------------------------------------------------------------------------------------------------
     # Parameters: left, bottom, width, height
     ax_map = fig.add_axes([0.4515, 0.72, 0.2, 0.2])
+    admin1_url = "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip"
+    admin2_url = "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_2_counties.zip"
 
-    # Set the working directory to the location of the main.py script
-    main_dir = os.path.dirname(os.path.realpath(__file__))
-    admin1_path = os.path.join(main_dir, 'shapefiles', 'ne_10m_admin_1_states_provinces', 'ne_10m_admin_1_states_provinces.shp')
-    admin2_path = os.path.join(main_dir, 'shapefiles', 'ne_10m_admin_2_counties', 'ne_10m_admin_2_counties.shp')
-
-    # Load shapefiles
-    admin1 = gpd.read_file(admin1_path)
-    admin2 = gpd.read_file(admin2_path)
+    admin1 = gpd.read_file(admin1_url)
+    admin2 = gpd.read_file(admin2_url)
 
     admin1.boundary.plot(ax=ax_map, linewidth=1, color='black', alpha=1)
     admin2.boundary.plot(ax=ax_map, linewidth=0.5, color='black', alpha=0.5)

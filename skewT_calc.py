@@ -5,7 +5,7 @@ from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index
 from pressure_to_height import pressure_to_height
 
 # Plot the Skew-T diagram
-def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, timestamp, filename):
+def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat, lon, location, timestamp, filename):
     # Filter data for pressures above 100 hPa
     valid_indices = pressures > 100
     pressures_short = pressures[valid_indices]
