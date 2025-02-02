@@ -142,11 +142,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     # Cartographic map --------------------------------------------------------------------------------------------------------
     # Parameters: left, bottom, width, height
     ax_map = fig.add_axes([0.4515, 0.72, 0.2, 0.2])
-    admin1_url = "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip"
-    admin2_url = "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_2_counties.zip"
 
-    admin1 = gpd.read_file(admin1_url)
-    admin2 = gpd.read_file(admin2_url)
+    admin1 = gpd.read_file("https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip")
+    admin2 = gpd.read_file("https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_2_counties.zip")
 
     admin1.boundary.plot(ax=ax_map, linewidth=1, color='black', alpha=1)
     admin2.boundary.plot(ax=ax_map, linewidth=0.5, color='black', alpha=0.5)
