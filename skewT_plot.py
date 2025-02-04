@@ -169,11 +169,13 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     ax_map.set_yticklabels([])
 
     # Add text ----------------------------------------------------------------------------------------------------------------
-    fig.lines.append(plt.Line2D([0.675, 0.675], [0.477, 0.04],
+    fig.lines.append(plt.Line2D([0.675, 0.675], [0.45, 0.04],
                             transform=fig.transFigure, color='black', linewidth=0.8))
-    fig.lines.append(plt.Line2D([0.958, 0.958], [0.477, 0.04],
+    fig.lines.append(plt.Line2D([0.97, 0.97], [0.45, 0.04],
                             transform=fig.transFigure, color='black', linewidth=0.8))
-    fig.lines.append(plt.Line2D([0.958, 0.675], [0.04, 0.04],
+    fig.lines.append(plt.Line2D([0.97, 0.675], [0.04, 0.04],
+                            transform=fig.transFigure, color='black', linewidth=0.8))
+    fig.lines.append(plt.Line2D([0.97, 0.675], [0.45, 0.45],
                             transform=fig.transFigure, color='black', linewidth=0.8))
         
     ax_hodo.text(
@@ -261,7 +263,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         )
 
     fig.text(
-        0.89, 0.43,  # Position (X, Y) for table title
+        0.90, 0.43,  # Position (X, Y) for table title
         r'$\bf{Profile\ Parameters}$',
         fontsize=18,
         va='top',
@@ -292,7 +294,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     ]
 
     # Set the table position (starting X, Y coordinates)
-    table_x_left = 0.835  # X position for labels
+    table_x_left = 0.845  # X position for labels
     table_x_center = table_x_left + 0.08  # X position for values
     table_x_right = table_x_center + 0.01  # X position for units
     table_y_start = 0.38  # Starting Y position
