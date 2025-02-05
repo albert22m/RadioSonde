@@ -13,7 +13,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh, pwat):
+        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh3, srh6, pwat, frz):
         
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
@@ -120,19 +120,48 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     ax_hodo.set_xlim(-component_range + 0.1, component_range - 0.1)
     ax_hodo.set_ylim(-component_range + 0.1, component_range - 0.1)
 
+    # Turn off default axis ticks
+    ax_hodo.set_xticks([])
+    ax_hodo.set_yticks([])
+
     # Add storm motion vector to the hodograph
     ax_hodo.quiver(
         0, 0,  # Start at origin
         u_storm, v_storm,  # Storm motion vector
         angles='xy', scale_units='xy', scale=1, color='grey', width=0.01
     )
-    ax_hodo.annotate('RM', xy=(u_storm, v_storm), xytext=(5, 0), weight='bold',
+    ax_hodo.annotate('RM' if lat >= 0 else 'LM', xy=(u_storm, v_storm), xytext=(5, 0), weight='bold',
                  textcoords='offset points', color='grey', fontsize=15, ha='left', va='center')
 
     ax_hodo.tick_params(axis='x', which='major', direction='in', pad=-17, labelsize=15)
     ax_hodo.tick_params(axis='y', which='major', direction='in', pad=-5, labelsize=15)
     for label in ax_hodo.get_yticklabels():
         label.set_horizontalalignment('left')
+
+
+    velocity_range = np.arange(0, component_range + 1, grid_increment)
+    for vel in velocity_range[1:]:  # Skip 0 to avoid overlapping at the center
+        # Positive X-axis
+        ax_hodo.annotate(
+            str(vel), (vel, 0), xytext=(0, -15), textcoords='offset points',
+            ha='center', va='center', fontsize=15, color='black'
+        )
+        # Negative X-axis
+        ax_hodo.annotate(
+            str(vel), (-vel, 0), xytext=(0, -15), textcoords='offset points',
+            ha='center', va='center', fontsize=15, color='black'
+        )
+        # Positive Y-axis
+        ax_hodo.annotate(
+            str(vel), (0, vel), xytext=(-15, 0), textcoords='offset points',
+            ha='center', va='center', fontsize=15, color='black'
+        )
+        # Negative Y-axis
+        ax_hodo.annotate(
+            str(vel), (0, -vel), xytext=(-15, 0), textcoords='offset points',
+            ha='center', va='center', fontsize=15, color='black'
+        )
+
 
     # Add the colorbar with custom size
     cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0, shrink=0.922, aspect=40)  # shrink (size), aspect(thickness)
@@ -180,7 +209,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         
     ax_hodo.text(
     0.5, 1.022,  # Position: horizontal, vertical
-    'Wind Speed (m/s)',
+    'Wind Speed (kts)',
     fontsize=18,
     rotation=0,
     ha='center', va='center',
@@ -212,7 +241,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         'LI',
         'VT',
         'TT',
-        'SRH-3 km'
+        'SRH-3 km',
+        'SRH-6 km'
     ]
     table_values = [
         f'{cape.m:.1f}',
@@ -220,7 +250,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         f'{li:.0f}',
         f'{vt:.0f}',
         f'{tt:.0f}',
-        f'{srh:.0f}'
+        f'{srh3:.0f}',
+        f'{srh6:.0f}'
     ]
     table_units = [
         'J/kg',
@@ -228,6 +259,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         'Δ°C',
         'Δ°C',
         'Δ°C',
+        'm²/s²',
         'm²/s²'
     ]
 
@@ -276,17 +308,20 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
         'LCL',
         'LFC',
         'EL',
-        'CCL'
+        'CCL',
+        'FRZ'
     ]
     table_values = [
         f'{pwat:.0f}',
         f'{height_lcl:.0f}',
         'N/A' if np.isnan(height_lfc) else f'{height_lfc:.0f}',
         'N/A' if np.isnan(height_el) else f'{height_el:.0f}',
-        f'{height_ccl:.0f}'
+        f'{height_ccl:.0f}',
+        f'{frz:.0f}'
     ]
     table_units = [
         'mm',
+        'm',
         'm',
         'm',
         'm',

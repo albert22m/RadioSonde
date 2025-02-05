@@ -7,8 +7,8 @@ def parse_geojson(data):
     pressures = []  # in hPa
     temperatures = []  # in Celsius
     dewpoints = []  # in Celsius
-    wind_u = []  # in m/s
-    wind_v = []  # in m/s
+    wind_u = []  # in kts
+    wind_v = []  # in kts
     heights = []  # Geopotential height in meters
     timestamp = 0  # Unix timestamp
 

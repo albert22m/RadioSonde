@@ -5,7 +5,7 @@ from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index
 from pressure_to_height import pressure_to_height
 
 # Plot the Skew-T diagram
-def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights):
+def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat):
     # Filter data for pressures above 100 hPa
     valid_indices = pressures > 100
     pressures_short = pressures[valid_indices]
@@ -41,10 +41,15 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights):
     parcel_cin = parcel[cin_indices]
 
     # Bunkers storm motion
-    bunkers_motion = metpy.calc.bunkers_storm_motion(pressures * units.hPa, wind_u * units('m/s'), wind_v * units('m/s'), heights * units.m)
+    bunkers_motion = metpy.calc.bunkers_storm_motion(pressures * units.hPa, wind_u * units.kts, wind_v * units.kts, heights * units.m)
     rm_storm, lm_storm, mean_wind = bunkers_motion
-    u_storm = rm_storm[0].magnitude
-    v_storm = rm_storm[1].magnitude
+
+    if lat >= 0:
+        u_storm = rm_storm[0].magnitude
+        v_storm = rm_storm[1].magnitude
+    else:
+        u_storm = lm_storm[0].magnitude
+        v_storm = lm_storm[1].magnitude
 
     # Lifting Index (LI), Vertical Totals Index (VT), Total Totals Index (TT)
     li = lifted_index(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC).magnitude[0]
@@ -52,14 +57,20 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights):
     tt = total_totals_index(pressures * units.hPa, temperatures * units.degC, dewpoints * units.degC).magnitude
 
     # Storm Relative Winds
-    u_storm_relative = wind_u_short - u_storm
-    v_storm_relative = wind_v_short - v_storm
+    u_storm_rel = wind_u_short - u_storm
+    v_storm_rel = wind_v_short - v_storm
 
     # Compute Storm Relative Helicity (SRH)
-    srh = storm_relative_helicity(heights * units.m, wind_u * units('m/s'), wind_v * units('m/s'), depth=3 * units.km, storm_u=u_storm * units('m/s'), storm_v=v_storm * units('m/s'))[2].magnitude
+    srh3 = storm_relative_helicity(heights * units.m, wind_u * units.kts, wind_v * units.kts,
+        depth=3 * units.km, storm_u=u_storm * units.kts, storm_v=v_storm * units.kts)[0].magnitude
+    srh6 = storm_relative_helicity(heights * units.m, wind_u * units.kts, wind_v * units.kts,
+        depth=6 * units.km, storm_u=u_storm * units.kts, storm_v=v_storm * units.kts)[0].magnitude
 
     # Precipitable water
     pwat = precipitable_water(pressures * units.hPa, dewpoints * units.degC).magnitude
+
+    # Freezing level
+    frz = np.interp(0, temperatures[::-1], heights[::-1])
 
     return (
         pressures_short, wind_u_short, wind_v_short,
@@ -70,5 +81,5 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights):
         pressure_ccl, temperature_ccl, height_ccl,
         pressures_cape, temperatures_cape, parcel_cape,
         pressures_cin, temperatures_cin, parcel_cin,
-        u_storm, v_storm, li, vt, tt, srh, pwat
+        u_storm, v_storm, li, vt, tt, srh3, srh6, pwat, frz
     )
