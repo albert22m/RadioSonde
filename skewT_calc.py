@@ -2,7 +2,7 @@ import numpy as np
 import metpy
 from metpy.units import units
 from metpy.calc import cape_cin, parcel_profile, lfc, el, lcl, ccl, lifted_index, vertical_totals, total_totals_index, storm_relative_helicity, precipitable_water
-from pressure_to_height import pressure_to_height
+from calc import pressure_to_height
 
 # Plot the Skew-T diagram
 def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat):

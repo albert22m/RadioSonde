@@ -8,6 +8,7 @@ from metpy.units import units
 from matplotlib.gridspec import GridSpec
 import geopandas as gpd
 from matplotlib.patches import Circle
+from calc import height_to_pressure
 
 def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp, filename,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
@@ -64,24 +65,19 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     plt.xlabel('Temperature (°C)', fontsize=18)
     plt.ylabel('Pressure (hPa)', fontsize=18)
 
-    secax = skew.ax.secondary_yaxis(1.03,
-        functions=(
-            lambda p: mpcalc.pressure_to_height_std(units.Quantity(p, 'hPa')).m_as('km'),
-            lambda h: mpcalc.height_to_pressure_std(units.Quantity(h, 'km')).m
-            )
+    # Add height axis
+    for height in [1000, 3000, 5000, 7000, 9000, 13000]:
+        pressure = height_to_pressure(height, heights, pressures)
+        trans, _, _ = skew.ax.get_yaxis_text1_transform(0)  # Transformation for the y-axis text alignment
+        skew.ax.text(
+            0.05, pressure,
+            f"{int(height / 1000)}km",
+            fontsize=15,
+            transform=trans,
+            alpha=0.85,
+            weight='bold',
+            color='grey'
         )
-    secax.yaxis.set_major_locator(plt.FixedLocator(np.arange(0, 17)))
-    secax.yaxis.set_minor_locator(plt.NullLocator())
-    secax.yaxis.set_major_formatter(plt.ScalarFormatter())
-    secax.tick_params(axis='y', which='major', labelsize=15)
-    secax.set_ylabel('Height (km)', fontsize=18)
-    
-    # Add a legend outside the plot
-    skew.ax.legend(
-        loc='upper left',
-        fontsize=15,
-        frameon=True,
-    )
 
     fig.subplots_adjust(left=-0.33, bottom=0.04, right=0.97, top=0.92, wspace=0, hspace=0)
 
