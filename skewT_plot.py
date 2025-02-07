@@ -8,9 +8,9 @@ from metpy.units import units
 from matplotlib.gridspec import GridSpec
 import geopandas as gpd
 from matplotlib.patches import Circle
-from calc import height_to_pressure
+from calc import height_to_pressure, temp_advection
 
-def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp, filename,
+def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elevation, station_id, lat, lon, location, timestamp, filename,
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
@@ -25,7 +25,10 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
 
     skew.ax.tick_params(axis='x', which='major', direction='in', pad=-17, labelsize=15)
     skew.ax.tick_params(axis='y', which='major', direction='in', pad=-7, labelsize=15)
+    for label in skew.ax.get_xticklabels():
+        label.set_fontweight('bold')
     for label in skew.ax.get_yticklabels():
+        label.set_fontweight('bold')
         label.set_horizontalalignment('left')
 
     # Plot the data
@@ -79,6 +82,16 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
             color='grey'
         )
 
+    skew.ax.text(
+            0.05, height_to_pressure(elevation, heights, pressures),
+            f"SFC ({int(elevation)}m)",
+            fontsize=15,
+            transform=trans,
+            alpha=0.85,
+            weight='bold',
+            color='grey'
+        )
+
     fig.subplots_adjust(left=-0.33, bottom=0.04, right=0.97, top=0.92, wspace=0, hspace=0)
 
     # Add a title with aligned sections
@@ -87,6 +100,54 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     timestamp_plt = timestamp.strftime('%b %d, %Y %H:%M') + 'Z' # Format datetime object to string
     skew.ax.set_title(timestamp_plt, loc='center', fontsize=22)
     skew.ax.set_title(f'{station_id} | {lat:.2f}°, {lon:.2f}°', loc='right', fontsize=22)
+
+    # Temperature advection ---------------------------------------------------------------------------------------------------
+    temp_adv = temp_advection(temperatures, wind_u, wind_v, heights, lat)
+
+    # Compute top and bottom bounds for each bin
+    bot_arr, top_arr = np.hsplit(np.column_stack((heights[:-1], heights[1:])), 2)
+    temp_adv = temp_adv[:-1]  # Trim last value
+  
+    # Add temp_adv plot to the right
+    temp_adv_ax = fig.add_axes((0.614, 0.04, 0.061, 0.88))  # Adjust position and size (x, y, width, height)
+    
+    # Set plot styles
+    temp_adv_ax.spines["top"].set_color('black')
+    temp_adv_ax.spines["left"].set_color('black')
+    temp_adv_ax.spines["right"].set_color('black')
+    temp_adv_ax.spines["bottom"].set_color('black')
+    temp_adv_ax.set_facecolor('lightgray')
+
+    # Set axis limits and scaling
+    temp_adv_ax.set_yscale('log')
+    temp_adv_ax.set_ylim(1050, 100)
+    temp_adv_ax.set_xlim(np.nanmin(temp_adv) - 4, np.nanmax(temp_adv) + 4)
+    temp_adv_ax.set_yticklabels([]), temp_adv_ax.set_xticklabels([])
+    temp_adv_ax.tick_params(axis='y', length=0), temp_adv_ax.tick_params(axis='x', length=0)
+
+    # Draw horizontal reference lines
+    lvls = [1000, 900, 800, 700, 600, 500, 400, 300, 200]
+    for lvl in lvls:
+        temp_adv_ax.plot((-20, 20), (lvl, lvl), color='gray', alpha=0.8, linewidth=1, linestyle='-', clip_on=True)
+
+    # Plot temperature advection bars
+    for i in range(len(temp_adv)):
+        color = 'red' if temp_adv[i] > 0 else 'cornflowerblue'
+        
+        temp_adv_ax.barh(top_arr[i], temp_adv[i], align='center',
+                        height=bot_arr[i] - top_arr[i], edgecolor='black',
+                        alpha=0.3, color=color)
+
+        # Add annotations for temperature advection values
+        if abs(temp_adv[i]) > 0.1:  # Threshold to avoid clutter
+            ha = 'left' if temp_adv[i] > 0 else 'right'
+            x_offset = 0.3 if temp_adv[i] > 0 else -0.3
+            temp_adv_ax.annotate(f"{temp_adv[i]:.1f}", 
+                                xy=(x_offset, top_arr[i] + 10), color='black',
+                                textcoords='data', ha=ha, weight='bold')
+
+    # Add a vertical reference line at x=0
+    temp_adv_ax.axvline(x=0, color='black', linewidth=1, linestyle='--', clip_on=True)
 
     #  Calculate above ground level (AGL) heights -----------------------------------------------------------------------------
     agl = (heights - heights[0]) / 1000
@@ -134,7 +195,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
     for label in ax_hodo.get_yticklabels():
         label.set_horizontalalignment('left')
 
-
     velocity_range = np.arange(0, component_range + 1, grid_increment)
     for vel in velocity_range[1:]:  # Skip 0 to avoid overlapping at the center
         # Positive X-axis
@@ -157,7 +217,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, stat
             str(vel), (0, -vel), xytext=(-15, 0), textcoords='offset points',
             ha='center', va='center', fontsize=15, color='black'
         )
-
 
     # Add the colorbar with custom size
     cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0, shrink=0.922, aspect=40)  # shrink (size), aspect(thickness)

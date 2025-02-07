@@ -21,6 +21,7 @@ def parse_geojson(data):
             wind_u.append(props['wind_u'])
             wind_v.append(props['wind_v'])
             heights.append(props['gpheight'])
+    elevation = data['properties']['elevation']
 
     # Extract latitude and longitude
     lat = data['properties']['lat']
@@ -42,6 +43,7 @@ def parse_geojson(data):
         np.array(wind_u),
         np.array(wind_v),
         np.array(heights),
+        elevation,
         station_id,
         lat,
         lon,

@@ -14,7 +14,7 @@ def main():
         full_path = os.path.join('GeojsonData', filename)
 
         data = load_geojson(full_path)
-        pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp = parse_geojson(data)
+        pressures, temperatures, dewpoints, wind_u, wind_v, heights, elevation, station_id, lat, lon, location, timestamp = parse_geojson(data)
         print_time = timestamp.strftime('%b %d, %Y at %M')
         print(f'  > PROFILE FOUND: {station_id} on {print_time}Z | {location}')
 
@@ -25,7 +25,7 @@ def main():
             pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat)
         
         skewT_plot(
-            pressures, temperatures, dewpoints, wind_u, wind_v, heights, station_id, lat, lon, location, timestamp, filename,
+            pressures, temperatures, dewpoints, wind_u, wind_v, heights, elevation, station_id, lat, lon, location, timestamp, filename,
             pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
             pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
             pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape, pressures_cin, temperatures_cin, parcel_cin,
