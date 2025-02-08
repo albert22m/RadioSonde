@@ -37,9 +37,15 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
     skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second,
         wind_v_short[::3] * units.meter / units.second, xloc=0.97)
+    
     trans, _, _ = skew.ax.get_yaxis_text1_transform(0)  # Transformation for the y-axis text alignment
-    plt.plot([0.97, 0.97], [100, 1050], 
+    plt.plot([0.97, 0.97], [100, 1025], 
          color='black', linestyle='-', linewidth=0.8, transform=trans)
+    
+    # Overlay points at the base of each wind barb (if wind_speed > 2kt)
+    skew.ax.scatter([0.97] * np.sum(np.sqrt(wind_u_short[::3]**2 + wind_v_short[::3]**2) > 2), 
+                pressures_short[::3][np.sqrt(wind_u_short[::3]**2 + wind_v_short[::3]**2) > 2], 
+                color='black', s=10, zorder=3, transform=trans)
     
     # Add special lines with labels
     skew.plot_dry_adiabats(linewidth=1, colors='darkorange', label='Dry Adiabats')
@@ -148,12 +154,12 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     lvls = [1000, 900, 800, 700, 600, 500, 400, 300, 200]
     for lvl in lvls:
         temp_adv_ax.plot((-np.nanmax(np.abs(layer_temp_adv)) - 4, np.nanmax(np.abs(layer_temp_adv)) + 4),
-            (lvl, lvl), color='gray', alpha=0.8, linewidth=1, linestyle='-', clip_on=True)
+            (lvl, lvl), color='gray', alpha=0.8, linewidth=0.6, linestyle='-', clip_on=True)
 
     # Plot temperature advection bars
     for i in range(len(layer_temp_adv)):
         if not np.isnan(layer_temp_adv[i]):  # Skip layers with no data
-            color = 'red' if layer_temp_adv[i] > 0 else 'cornflowerblue'
+            color = 'tab:red' if layer_temp_adv[i] > 0 else 'tab:blue'
             
             temp_adv_ax.barh(
                 (top_arr[i] + bot_arr[i]) / 2,  # Center of the bar
@@ -161,7 +167,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
                 align='center',
                 height=bot_arr[i] - top_arr[i],  # Height of the bar
                 edgecolor='black',
-                alpha=0.3,
+                alpha=0.4,
                 color=color
             )
 
@@ -172,8 +178,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
                 temp_adv_ax.annotate(
                     f"{layer_temp_adv[i]:.1f}", 
                     xy=(x_offset, (top_arr[i] + bot_arr[i]) / 2),  # Center of the bar
-                    color='black',
-                    textcoords='data', ha=ha, weight='bold'
+                    color='black', fontsize=12,
+                    textcoords='data', ha=ha, va='center', weight='bold'
                 )
 
     # Add a vertical reference line at x=0
@@ -295,7 +301,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         
     ax_hodo.text(
     0.5, 1.022,  # Position: horizontal, vertical
-    'Wind Speed (kts)',
+    'Wind Speed (kt)',
     fontsize=18,
     rotation=0,
     ha='center', va='center',
