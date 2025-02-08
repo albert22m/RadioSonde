@@ -190,7 +190,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     agl = (heights - heights[0]) / 1000
     mask = agl <= 10   # Limit to heights below 10 km
     intervals = np.array([0, 1, 3, 5, 8, 10])
-    colors = ['tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:pink']
+    colors = ['tab:blue', 'tab:green', 'tab:olive', 'tab:red', 'tab:pink']
 
     component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
     component_range = math.ceil(component_range / 5) * 5
@@ -198,8 +198,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
     
     # Add hodograph on the right
-    gs = GridSpec(1, 2, left=0.35, bottom=0.4585, right=1, top=0.9385, wspace=0, hspace=0)
-    ax_hodo = fig.add_subplot(gs[0, 1])
+    ax_hodo = fig.add_axes([0.586, 0.447, 0.4725, 0.4725])
     h = Hodograph(ax_hodo, component_range=component_range)
     h.add_grid(increment=grid_increment)
     l = h.plot_colormapped(
@@ -237,28 +236,36 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         # Positive X-axis
         ax_hodo.annotate(
             str(vel), (vel, 0), xytext=(0, -15), textcoords='offset points',
-            ha='center', va='center', fontsize=15, color='black'
+            ha='center', va='center', fontsize=15, color='grey', weight='bold'
         )
         # Negative X-axis
         ax_hodo.annotate(
             str(vel), (-vel, 0), xytext=(0, -15), textcoords='offset points',
-            ha='center', va='center', fontsize=15, color='black'
+            ha='center', va='center', fontsize=15, color='grey', weight='bold'
         )
         # Positive Y-axis
         ax_hodo.annotate(
             str(vel), (0, vel), xytext=(-15, 0), textcoords='offset points',
-            ha='center', va='center', fontsize=15, color='black'
+            ha='center', va='center', fontsize=15, color='grey', weight='bold'
         )
         # Negative Y-axis
         ax_hodo.annotate(
             str(vel), (0, -vel), xytext=(-15, 0), textcoords='offset points',
-            ha='center', va='center', fontsize=15, color='black'
+            ha='center', va='center', fontsize=15, color='grey', weight='bold'
         )
 
     # Add the colorbar with custom size
-    cbar = plt.colorbar(l, ax=ax_hodo, orientation='vertical', pad=0, shrink=0.922, aspect=40)  # shrink (size), aspect(thickness)
-    cbar.set_label('Height (km)', fontsize=18)
+    cbar_ax = fig.add_axes([0.675, 0.447, 0.004, 0.4725])
+    cbar = plt.colorbar(l, cax=cbar_ax, orientation='vertical')
     cbar.ax.tick_params(labelsize=15)
+
+    # Adjust tick label vertical alignment
+    for label in cbar.ax.get_yticklabels():
+        text = label.get_text()  # Get the text of the tick label
+        if text == '0':
+            label.set_verticalalignment('bottom')
+        elif text == '10':
+            label.set_verticalalignment('top')
 
     # Cartographic map --------------------------------------------------------------------------------------------------------
     # Parameters: left, bottom, width, height
@@ -290,13 +297,13 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     ax_map.set_yticklabels([])
 
     # Add text ----------------------------------------------------------------------------------------------------------------
-    fig.lines.append(plt.Line2D([0.675, 0.675], [0.45, 0.04],
+    fig.lines.append(plt.Line2D([0.675, 0.675], [0.447, 0.04],
                             transform=fig.transFigure, color='black', linewidth=0.8))
-    fig.lines.append(plt.Line2D([0.97, 0.97], [0.45, 0.04],
+    fig.lines.append(plt.Line2D([0.97, 0.97], [0.447, 0.04],
                             transform=fig.transFigure, color='black', linewidth=0.8))
     fig.lines.append(plt.Line2D([0.97, 0.675], [0.04, 0.04],
                             transform=fig.transFigure, color='black', linewidth=0.8))
-    fig.lines.append(plt.Line2D([0.97, 0.675], [0.45, 0.45],
+    fig.lines.append(plt.Line2D([0.97, 0.675], [0.447, 0.447],
                             transform=fig.transFigure, color='black', linewidth=0.8))
         
     ax_hodo.text(
@@ -320,7 +327,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     fig.text(
         0.74, 0.43,  # Position (X, Y) for table title
         r'$\bf{Instability\ Indices}$',
-        fontsize=18,
+        fontsize=22,
         va='top',
         ha='center',
         linespacing=1.75
@@ -333,8 +340,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'LI',
         'VT',
         'TT',
-        'SRH-3 km',
-        'SRH-6 km'
+        'SRH-3ₖₘ',
+        'SRH-6ₖₘ'
     ]
     table_values = [
         f'{cape.m:.1f}',
@@ -358,38 +365,39 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     # Set the table position (starting X, Y coordinates)
     table_x_left = 0.685  # X position for labels
     table_x_center = table_x_left + 0.08  # X position for values
-    table_x_right = table_x_center + 0.01  # X position for units
+    table_x_right = table_x_center + 0.0075  # X position for units
     table_y_start = 0.38  # Starting Y position
     line_spacing = 0.035  # Vertical spacing between rows
+
+    colors = ['blue', 'cornflowerblue', 'mediumblue', 'royalblue', 'darkblue']
 
     # Render the table rows
     for i, (label, value, unit) in enumerate(zip(table_labels, table_values, table_units)):
         fig.text(
             table_x_left, table_y_start - i * line_spacing,  # Position for labels
             label,
-            fontsize=18,
-            va='top',
-            ha='left'
+            fontsize=18, weight='bold',
+            va='top', ha='left'
         )
+        # Apply the color from the list based on the index
+        color = colors[i % len(colors)]  # Use modulo to cycle through colors if there are more rows than colors
         fig.text(
             table_x_center, table_y_start - i * line_spacing,  # Position for values
             value,
-            fontsize=18,
-            va='top',
-            ha='right'
+            fontsize=18, weight='bold', color=color,
+            va='top', ha='right'
         )
         fig.text(
             table_x_right, table_y_start - i * line_spacing,  # Position for units
             unit,
-            fontsize=18,
-            va='top',
-            ha='left'
+            fontsize=18, weight='bold', color=color,
+            va='top', ha='left'
         )
 
     fig.text(
         0.90, 0.43,  # Position (X, Y) for table title
         r'$\bf{Profile\ Parameters}$',
-        fontsize=18,
+        fontsize=22,
         va='top',
         ha='center',
         linespacing=1.75
@@ -423,32 +431,31 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     # Set the table position (starting X, Y coordinates)
     table_x_left = 0.845  # X position for labels
     table_x_center = table_x_left + 0.08  # X position for values
-    table_x_right = table_x_center + 0.01  # X position for units
+    table_x_right = table_x_center + 0.0075  # X position for units
     table_y_start = 0.38  # Starting Y position
     line_spacing = 0.035  # Vertical spacing between rows
 
-    # Render the table rows
+    # Render the table rowss
     for i, (label, value, unit) in enumerate(zip(table_labels, table_values, table_units)):
         fig.text(
             table_x_left, table_y_start - i * line_spacing,  # Position for labels
             label,
-            fontsize=18,
-            va='top',
-            ha='left'
+            fontsize=18, weight='bold',
+            va='top', ha='left'
         )
+        # Apply the color from the list based on the index
+        color = colors[i % len(colors)]  # Use modulo to cycle through colors if there are more rows than colors
         fig.text(
             table_x_center, table_y_start - i * line_spacing,  # Position for values
             value,
-            fontsize=18,
-            va='top',
-            ha='right'
+            fontsize=18, weight='bold', color=color,
+            va='top', ha='right'
         )
         fig.text(
             table_x_right, table_y_start - i * line_spacing,  # Position for units
             unit,
-            fontsize=18,
-            va='top',
-            ha='left'
+            fontsize=18, weight='bold', color=color,
+            va='top', ha='left'
         )
 
     # Save figure
