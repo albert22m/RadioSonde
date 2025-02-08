@@ -13,14 +13,14 @@ def height_to_pressure(height_level, heights, pressures):
     pressure_interp = interp1d(heights[::-1], pressures[::-1], bounds_error=False, fill_value=np.nan)
     return pressure_interp(height_level)
 
-def temp_advection(temperatures, wind_u, wind_v, heights, lat):
+def temp_advection(temperatures, pressures, wind_u, wind_v, heights, lat):
     """
-    Compute temperature advection in °C/s considering both horizontal wind components.
+    Compute temperature advection in °C/h.
 
     Parameters:
     - temperatures: Array of temperatures (K or °C)
-    - wind_u: U-component of wind (knots) → will be converted to m/s
-    - wind_v: V-component of wind (knots) → will be converted to m/s
+    - pressures: Corresponding pressures (hPa or mb)
+    - wind_u, wind_v: U/V components of wind (knots)
     - heights: Corresponding heights (m)
     - lat: Latitude for Coriolis effect
 
@@ -28,25 +28,34 @@ def temp_advection(temperatures, wind_u, wind_v, heights, lat):
     - temp_adv: Temperature advection (°C/h)
     """
 
-    wind_u = wind_u * 0.51444
+    wind_u = wind_u * 0.51444  # Convert to m/s
     wind_v = wind_v * 0.51444
 
-    # Compute temperature gradient (dT/dz)
-    dTdz = np.gradient(temperatures, heights)
-    print(dTdz[:4])
+    # Calculate temperature gradient (dT/dz or dT/dp)
+    dTdp = np.gradient(temperatures, pressures)
+    dTdz = -dTdp * (pressures / (287.05 * temperatures))  # Convert to dT/dz
 
-    # Compute wind speed and direction
-    wind_speed = np.sqrt(wind_u**2 + wind_v**2)  # Wind magnitude (m/s)
-    wind_dir = np.arctan2(wind_v, wind_u) * (180 / np.pi)  # Convert to degrees
-    print(wind_speed[:4])
-    print(wind_dir[:4])
+    # Compute average temperature and mean wind for layers
+    avg_temp = (temperatures[:-1] + temperatures[1:]) / 2
+    mean_u = (wind_u[:-1] + wind_u[1:]) / 2
+    mean_v = (wind_v[:-1] + wind_v[1:]) / 2
+    wind_speed = np.sqrt(mean_u**2 + mean_v**2)
 
-    # Compute Coriolis parameter f (s⁻¹)
-    omega = 2 * np.pi / 86164  # Earth's rotation rate (rad/s)
-    f = 2 * omega * np.sin(np.radians(lat))  # Coriolis parameter
+    # Calculate directional change (d_theta)
+    wind_dir_bot = np.arctan2(wind_v[:-1], wind_u[:-1]) * (180 / np.pi)
+    wind_dir_top = np.arctan2(wind_v[1:], wind_u[1:]) * (180 / np.pi)
 
-    # Compute advection: -Vg * (dT/dz) (SHARPpy-style)
-    temp_adv = - (f / 9.81) * wind_speed**2 * dTdz * 3600
-    print(temp_adv[:4])
+    mod = 180 - wind_dir_bot
+    wind_dir_top += mod
+    wind_dir_top = np.where(wind_dir_top < 0, wind_dir_top + 360, wind_dir_top)
+    wind_dir_top = np.where(wind_dir_top >= 360, wind_dir_top - 360, wind_dir_top)
+    d_theta = wind_dir_top - 180
+
+    # Coriolis parameter
+    omega = 2 * np.pi / 86164
+    f = abs(2 * omega * np.sin(np.radians(lat)))
+
+    # Temperature advection
+    temp_adv = -(f / 9.81) * wind_speed**2 * avg_temp * (d_theta / np.diff(heights)) * 3600  # °C/h
 
     return temp_adv

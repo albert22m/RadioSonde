@@ -35,7 +35,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1)
     skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
     skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
-    skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second, wind_v_short[::3] * units.meter / units.second)
+    skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second,
+        wind_v_short[::3] * units.meter / units.second, xloc=0.97)
+    trans, _, _ = skew.ax.get_yaxis_text1_transform(0)  # Transformation for the y-axis text alignment
+    plt.plot([0.97, 0.97], [100, 1050], 
+         color='black', linestyle='-', linewidth=0.8, transform=trans)
     
     # Add special lines with labels
     skew.plot_dry_adiabats(linewidth=1, colors='darkorange', label='Dry Adiabats')
@@ -71,7 +75,6 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     # Add height axis
     for height in [1000, 3000, 5000, 7000, 9000, 13000]:
         pressure = height_to_pressure(height, heights, pressures)
-        trans, _, _ = skew.ax.get_yaxis_text1_transform(0)  # Transformation for the y-axis text alignment
         skew.ax.text(
             0.05, pressure,
             f"{int(height / 1000)}km",
@@ -102,52 +105,80 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     skew.ax.set_title(f'{station_id} | {lat:.2f}°, {lon:.2f}°', loc='right', fontsize=22)
 
     # Temperature advection ---------------------------------------------------------------------------------------------------
-    temp_adv = temp_advection(temperatures, wind_u, wind_v, heights, lat)
+    # Define pressure layers (boundaries)
+    layer_bounds = [1000, 900, 800, 700, 600, 500, 400, 300, 200, 100]
 
-    # Compute top and bottom bounds for each bin
-    bot_arr, top_arr = np.hsplit(np.column_stack((heights[:-1], heights[1:])), 2)
-    temp_adv = temp_adv[:-1]  # Trim last value
-  
+    # Compute temperature advection values
+    temp_adv = temp_advection(temperatures, pressures, wind_u, wind_v, heights, lat)
+
+    # Aggregate temperature advection values for each pressure layer
+    layer_temp_adv = []  # Averaged temperature advection for each layer
+    for i in range(len(layer_bounds) - 1):
+        # Find indices of pressures within the current layer
+        layer_mask = (pressures[:-1] >= layer_bounds[i + 1]) & (pressures[:-1] < layer_bounds[i])
+        
+        # Compute the mean temperature advection for this layer
+        if np.any(layer_mask):  # Ensure there are values in this layer
+            mean_adv = np.mean(temp_adv[layer_mask])
+            layer_temp_adv.append(mean_adv)
+        else:
+            layer_temp_adv.append(np.nan)  # No data in this layer
+
+    # Prepare top and bottom bounds for each bar
+    bot_arr = layer_bounds[:-1]  # Bottom of each layer
+    top_arr = layer_bounds[1:]   # Top of each layer
+
     # Add temp_adv plot to the right
     temp_adv_ax = fig.add_axes((0.614, 0.04, 0.061, 0.88))  # Adjust position and size (x, y, width, height)
-    
+
     # Set plot styles
     temp_adv_ax.spines["top"].set_color('black')
     temp_adv_ax.spines["left"].set_color('black')
     temp_adv_ax.spines["right"].set_color('black')
     temp_adv_ax.spines["bottom"].set_color('black')
-    temp_adv_ax.set_facecolor('lightgray')
 
     # Set axis limits and scaling
     temp_adv_ax.set_yscale('log')
     temp_adv_ax.set_ylim(1050, 100)
-    temp_adv_ax.set_xlim(np.nanmin(temp_adv) - 4, np.nanmax(temp_adv) + 4)
+    temp_adv_ax.set_xlim(-np.nanmax(np.abs(layer_temp_adv)) - 4, np.nanmax(np.abs(layer_temp_adv)) + 4)
     temp_adv_ax.set_yticklabels([]), temp_adv_ax.set_xticklabels([])
     temp_adv_ax.tick_params(axis='y', length=0), temp_adv_ax.tick_params(axis='x', length=0)
 
     # Draw horizontal reference lines
     lvls = [1000, 900, 800, 700, 600, 500, 400, 300, 200]
     for lvl in lvls:
-        temp_adv_ax.plot((-20, 20), (lvl, lvl), color='gray', alpha=0.8, linewidth=1, linestyle='-', clip_on=True)
+        temp_adv_ax.plot((-np.nanmax(np.abs(layer_temp_adv)) - 4, np.nanmax(np.abs(layer_temp_adv)) + 4),
+            (lvl, lvl), color='gray', alpha=0.8, linewidth=1, linestyle='-', clip_on=True)
 
     # Plot temperature advection bars
-    for i in range(len(temp_adv)):
-        color = 'red' if temp_adv[i] > 0 else 'cornflowerblue'
-        
-        temp_adv_ax.barh(top_arr[i], temp_adv[i], align='center',
-                        height=bot_arr[i] - top_arr[i], edgecolor='black',
-                        alpha=0.3, color=color)
+    for i in range(len(layer_temp_adv)):
+        if not np.isnan(layer_temp_adv[i]):  # Skip layers with no data
+            color = 'red' if layer_temp_adv[i] > 0 else 'cornflowerblue'
+            
+            temp_adv_ax.barh(
+                (top_arr[i] + bot_arr[i]) / 2,  # Center of the bar
+                layer_temp_adv[i],  # Advection value
+                align='center',
+                height=bot_arr[i] - top_arr[i],  # Height of the bar
+                edgecolor='black',
+                alpha=0.3,
+                color=color
+            )
 
-        # Add annotations for temperature advection values
-        if abs(temp_adv[i]) > 0.1:  # Threshold to avoid clutter
-            ha = 'left' if temp_adv[i] > 0 else 'right'
-            x_offset = 0.3 if temp_adv[i] > 0 else -0.3
-            temp_adv_ax.annotate(f"{temp_adv[i]:.1f}", 
-                                xy=(x_offset, top_arr[i] + 10), color='black',
-                                textcoords='data', ha=ha, weight='bold')
+            # Add annotations for temperature advection values
+            if abs(layer_temp_adv[i]) > 0.1:  # Threshold to avoid clutter
+                ha = 'left' if layer_temp_adv[i] > 0 else 'right'
+                x_offset = 0.3 if layer_temp_adv[i] > 0 else -0.3
+                temp_adv_ax.annotate(
+                    f"{layer_temp_adv[i]:.1f}", 
+                    xy=(x_offset, (top_arr[i] + bot_arr[i]) / 2),  # Center of the bar
+                    color='black',
+                    textcoords='data', ha=ha, weight='bold'
+                )
 
     # Add a vertical reference line at x=0
-    temp_adv_ax.axvline(x=0, color='black', linewidth=1, linestyle='--', clip_on=True)
+    temp_adv_ax.axvline(x=0, color='black', linewidth=0.8, linestyle='--', clip_on=True)
+    temp_adv_ax.set_xlabel('°C/h', fontsize=18)
 
     #  Calculate above ground level (AGL) heights -----------------------------------------------------------------------------
     agl = (heights - heights[0]) / 1000
