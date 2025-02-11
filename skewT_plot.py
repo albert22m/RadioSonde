@@ -33,8 +33,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
 
     # Plot the data
     skew.ax.axvline(0, color='brown', linestyle='-', linewidth=1)
-    skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature')
-    skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point')
+    skew.plot(pressures * units.hPa, temperatures * units.degC, 'r', label='Temperature', linewidth=2)
+    skew.plot(pressures * units.hPa, dewpoints * units.degC, 'b', label='Dew Point', linewidth=2)
     skew.plot_barbs(pressures_short[::3] * units.hPa, wind_u_short[::3] * units.meter / units.second,
         wind_v_short[::3] * units.meter / units.second, xloc=0.97)
     
@@ -191,16 +191,10 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     mask = agl <= 10   # Limit to heights below 10 km
     intervals = np.array([0, 1, 3, 5, 8, 10])
     colors = ['tab:blue', 'tab:green', 'tab:olive', 'tab:red', 'tab:pink']
-
-    component_range = max(abs(wind_u[mask].max()), abs(wind_u[mask].min()), abs(wind_v[mask].max()), abs(wind_v[mask].min()))
-    component_range = math.ceil(component_range / 5) * 5
-    valid_increments = np.array([5, 10, 15, 20])
-    grid_increment = valid_increments[np.argmin(abs(valid_increments - component_range / 3))]
     
     # Add hodograph on the right
     ax_hodo = fig.add_axes([0.586, 0.447, 0.4725, 0.4725])
-    h = Hodograph(ax_hodo, component_range=component_range)
-    h.add_grid(increment=grid_increment)
+    h = Hodograph(ax_hodo, component_range=150)
     l = h.plot_colormapped(
         wind_u[mask],
         wind_v[mask],
@@ -209,9 +203,33 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         colors=colors
     )
 
-    # Set limits with a margin of 0.1
-    ax_hodo.set_xlim(-component_range + 0.1, component_range - 0.1)
-    ax_hodo.set_ylim(-component_range + 0.1, component_range - 0.1)
+    # Calculate the min and max of wind components
+    u_min, u_max = wind_u[mask].min(), wind_u[mask].max()
+    v_min, v_max = wind_v[mask].min(), wind_v[mask].max()
+
+    # Ensure 0 is included in the range
+    u_min, u_max = min(u_min, 0), max(u_max, 0)
+    v_min, v_max = min(v_min, 0), max(v_max, 0)
+
+    # Determine the overall range for both axes
+    x_range, y_range = u_max - u_min, v_max - v_min
+
+    # Adjust the limits to be square
+    x_center = (u_max + u_min) / 2  # Center of x-axis
+    y_center = (v_max + v_min) / 2  # Center of y-axis
+
+    x_min = x_center - (max(x_range, y_range) / 2) - 0.2 * max(x_range, y_range)
+    x_max = x_center + (max(x_range, y_range) / 2) + 0.2 * max(x_range, y_range)
+    y_min = y_center - (max(x_range, y_range) / 2) - 0.2 * max(x_range, y_range)
+    y_max = y_center + (max(x_range, y_range) / 2) + 0.2 * max(x_range, y_range)
+
+    # Set the limits to ensure a square plot
+    ax_hodo.set_xlim(x_min, x_max)
+    ax_hodo.set_ylim(y_min, y_max)
+ 
+    # Add grid if needed
+    h.add_grid(increment=20, color='gray', linestyle='-', linewidth=1.5, alpha=0.4) 
+    h.add_grid(increment=10, color='gray', linestyle='--', linewidth=1, alpha=0.4)
 
     # Turn off default axis ticks
     ax_hodo.set_xticks([])
@@ -231,7 +249,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     for label in ax_hodo.get_yticklabels():
         label.set_horizontalalignment('left')
 
-    velocity_range = np.arange(0, component_range + 1, grid_increment)
+    velocity_range = range(0,200,10)
     for vel in velocity_range[1:]:  # Skip 0 to avoid overlapping at the center
         # Positive X-axis
         ax_hodo.annotate(
