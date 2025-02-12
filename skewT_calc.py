@@ -40,7 +40,7 @@ def skewT_calc(pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat)
     temperatures_cin = temperatures[cin_indices]
     parcel_cin = parcel[cin_indices]
 
-    # Bunkers storm motion
+    # Bunkers storm motion (SFC-6km)
     bunkers_motion = metpy.calc.bunkers_storm_motion(pressures * units.hPa, wind_u * units.kts, wind_v * units.kts, heights * units.m)
     rm_storm, lm_storm, mean_wind = bunkers_motion
 

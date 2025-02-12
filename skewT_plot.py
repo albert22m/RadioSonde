@@ -73,6 +73,12 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     skew.ax.annotate('CCL', xy=(temperature_ccl, pressure_ccl), xytext=(10, -4),
                  textcoords='offset points', color='black', fontsize=12, ha='left',
                  bbox=dict(facecolor=(0.75, 0.75, 0.75, 0.5), edgecolor='grey', boxstyle='round,pad=0.2'))
+    
+    skew.ax.legend(
+        loc='upper left',
+        fontsize=15,
+        frameon=True,
+    )
 
     # Labels and other adjustments
     plt.xlabel('Temperature (°C)', fontsize=18)
@@ -190,7 +196,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     agl = (heights - heights[0]) / 1000
     mask = agl <= 10   # Limit to heights below 10 km
     intervals = np.array([0, 1, 3, 5, 8, 10])
-    colors = ['tab:blue', 'tab:green', 'tab:olive', 'tab:red', 'tab:pink']
+    colors = ['blue', 'limegreen', 'gold', 'red', 'magenta']
     
     # Add hodograph on the right
     ax_hodo = fig.add_axes([0.586, 0.447, 0.4725, 0.4725])
@@ -218,10 +224,11 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     x_center = (u_max + u_min) / 2  # Center of x-axis
     y_center = (v_max + v_min) / 2  # Center of y-axis
 
-    x_min = x_center - (max(x_range, y_range) / 2) - 0.2 * max(x_range, y_range)
-    x_max = x_center + (max(x_range, y_range) / 2) + 0.2 * max(x_range, y_range)
-    y_min = y_center - (max(x_range, y_range) / 2) - 0.2 * max(x_range, y_range)
-    y_max = y_center + (max(x_range, y_range) / 2) + 0.2 * max(x_range, y_range)
+    offset = 0.4 if u_max <= 20 and v_max <= 20 else 0.2
+    x_min = x_center - (max(x_range, y_range) / 2) - offset * max(x_range, y_range)
+    x_max = x_center + (max(x_range, y_range) / 2) + offset * max(x_range, y_range)
+    y_min = y_center - (max(x_range, y_range) / 2) - offset * max(x_range, y_range)
+    y_max = y_center + (max(x_range, y_range) / 2) + offset * max(x_range, y_range)
 
     # Set the limits to ensure a square plot
     ax_hodo.set_xlim(x_min, x_max)
@@ -427,7 +434,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'LFC',
         'EL',
         'CCL',
-        'FRZ'
+        'FRZ',
+        'BSM-6ₖₘ'
     ]
     table_values = [
         f'{pwat:.0f}',
@@ -435,7 +443,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'N/A' if np.isnan(height_lfc) else f'{height_lfc:.0f}',
         'N/A' if np.isnan(height_el) else f'{height_el:.0f}',
         f'{height_ccl:.0f}',
-        f'{frz:.0f}'
+        f'{frz:.0f}',
+        f'{np.sqrt(u_storm**2 + v_storm**2):.0f}'
     ]
     table_units = [
         'mm',
@@ -443,7 +452,8 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'm',
         'm',
         'm',
-        'm'
+        'm',
+        'kt'
     ]
 
     # Set the table position (starting X, Y coordinates)
