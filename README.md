@@ -18,8 +18,8 @@ The repository consists of the following directories and files:<br>
 - **parse_geojson.py**  
   Parses the loaded GeoJSON data and extracts necessary information.
 
-- **pressure_to_height.py**  
-  Interpolates pressure to geopotential height using the data.
+- **calc.py**  
+  Contains interpolation functions and other calculations.
 
 - **skewT_calc.py**  
   Performs calculations to prepare the data for generating the Skew-T diagram.
