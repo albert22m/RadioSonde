@@ -14,7 +14,7 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
         pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
         pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape,
-        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, li, vt, tt, srh3, srh6, pwat, frz):
+        pressures_cin, temperatures_cin,parcel_cin, u_storm, v_storm, u_storm3, v_storm3, li, vt, tt, srh3, srh6, pwat, frz):
         
     # Create a new figure and Skew-T diagram
     fig = plt.figure(figsize=(10, 10), dpi=96)
@@ -105,6 +105,25 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
             alpha=0.85,
             weight='bold',
             color='grey'
+    )
+
+    # Define text and color for each temperature
+    labels = [f"{int(dewpoints[0])}°C", f"{int(temperatures[0])}°C"    ]
+    colors = ["blue", "red"]
+    hor_align = ["right", "left"]
+
+    # Iterate through temperatures, labels, and colors
+    for temperature, label, color, ha in zip([dewpoints[0], temperatures[0]], labels, colors, hor_align):
+        skew.ax.text(
+            temperature, height_to_pressure(elevation, heights, pressures),
+            label,
+            fontsize=15,
+            transform=skew.ax.transData,
+            alpha=0.85,
+            weight='bold',
+            color=color,
+            va='top',
+            ha=ha
         )
 
     fig.subplots_adjust(left=-0.33, bottom=0.04, right=0.97, top=0.92, wspace=0, hspace=0)
@@ -304,16 +323,18 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
 
     ax_map.set_aspect('equal', adjustable='box')
 
-    # Automatically zoom to the specific point with a buffer around i
+    # Automatically zoom to the specific point with a buffer around it
     buffer = 2  # Buffer size (controls the zoom level)
     ax_map.set_xlim(lon - buffer, lon + buffer)
     ax_map.set_ylim(lat - buffer, lat + buffer)
 
     # Draw marker
-    circle = Circle((lon, lat), radius=0.075, color='black', fill=False, linewidth=1)
+    circle = Circle((lon, lat), radius=0.1, color='black', fill=False, linewidth=1)
     ax_map.add_patch(circle)
-    ax_map.plot([lon - 0.1, lon + 0.1], [lat, lat], color='black', linewidth=1)  # Horizontal line
-    ax_map.plot([lon, lon], [lat - 0.1, lat + 0.1], color='black', linewidth=1)  # Vertical line
+    ax_map.plot([lon - 0.15, lon + 0.15], [lat, lat], color='black', linewidth=1)  # Horizontal line
+    ax_map.plot([lon, lon], [lat - 0.15, lat + 0.15], color='black', linewidth=1)  # Vertical line
+    ax_map.plot([lon + 0.10, lon + 0.15], [lat, lat], color='black', linewidth=2)
+    ax_map.plot([lon - 0.10, lon - 0.15], [lat, lat], color='black', linewidth=2)
 
     # Remove axis ticks and labels for the map
     ax_map.set_xticks([])
@@ -365,6 +386,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'LI',
         'VT',
         'TT',
+        '',
+        '',
+        '',
         'SRH-3ₖₘ',
         'SRH-6ₖₘ'
     ]
@@ -374,6 +398,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         f'{li:.0f}',
         f'{vt:.0f}',
         f'{tt:.0f}',
+        '',
+        '',
+        '',
         f'{srh3:.0f}',
         f'{srh6:.0f}'
     ]
@@ -383,6 +410,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'Δ°C',
         'Δ°C',
         'Δ°C',
+        '',
+        '',
+        '',
         'm²/s²',
         'm²/s²'
     ]
@@ -431,19 +461,25 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
     table_labels = [
         'PWAT',
         'LCL',
+        'CCL',
         'LFC',
         'EL',
-        'CCL',
         'FRZ',
+        '',
+        '',
+        'BSM-3ₖₘ',
         'BSM-6ₖₘ'
     ]
     table_values = [
         f'{pwat:.0f}',
         f'{height_lcl:.0f}',
+        f'{height_ccl:.0f}',
         'N/A' if np.isnan(height_lfc) else f'{height_lfc:.0f}',
         'N/A' if np.isnan(height_el) else f'{height_el:.0f}',
-        f'{height_ccl:.0f}',
         f'{frz:.0f}',
+        '',
+        '',
+        f'{np.sqrt(u_storm3**2 + v_storm3**2):.0f}',
         f'{np.sqrt(u_storm**2 + v_storm**2):.0f}'
     ]
     table_units = [
@@ -453,6 +489,9 @@ def skewT_plot(pressures, temperatures, dewpoints, wind_u, wind_v, heights, elev
         'm',
         'm',
         'm',
+        '',
+        '',
+        'kt',
         'kt'
     ]
 

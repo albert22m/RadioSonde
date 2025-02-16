@@ -20,7 +20,7 @@ def main():
 
         (pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
          pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el, pressure_ccl, temperature_ccl, height_ccl,
-         pressures_cape, temperatures_cape, parcel_cape, pressures_cin, temperatures_cin, parcel_cin, u_storm, v_storm,
+         pressures_cape, temperatures_cape, parcel_cape, pressures_cin, temperatures_cin, parcel_cin, u_storm, v_storm, u_storm3, v_storm3,
          li, vt, tt, srh3, srh6, pwat, frz) = skewT_calc(
             pressures, temperatures, dewpoints, wind_u, wind_v, heights, lat)
         
@@ -29,7 +29,7 @@ def main():
             pressures_short, wind_u_short, wind_v_short, parcel, cape, cin, pressure_lcl, temperature_lcl, height_lcl,
             pressure_lfc, temperature_lfc, height_lfc, pressure_el, temperature_el, height_el,
             pressure_ccl, temperature_ccl, height_ccl, pressures_cape, temperatures_cape, parcel_cape, pressures_cin, temperatures_cin, parcel_cin,
-            u_storm, v_storm, li, vt, tt, srh3, srh6, pwat, frz
+            u_storm, v_storm, u_storm3, v_storm3, li, vt, tt, srh3, srh6, pwat, frz
         )
 
         end_time = time.time()

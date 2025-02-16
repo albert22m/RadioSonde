@@ -2,6 +2,8 @@ from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter1d
+import metpy.calc as mpcalc
+from metpy.units import units
 
 def pressure_to_height(pressure_level, pressures, heights):
     """Interpolate height for a given pressure level using available data."""
@@ -59,3 +61,43 @@ def temp_advection(temperatures, pressures, wind_u, wind_v, heights, lat):
     temp_adv = -(f / 9.81) * wind_speed**2 * avg_temp * (d_theta / np.diff(heights)) * 3600  # °C/h
 
     return temp_adv
+
+def manual_storm_motion(pressures, heights, wind_u, wind_v, lat):
+    
+    # Filter levels up to 3 km
+    mask = heights <= 3000  # Select only levels up to 3 km
+
+    pressures_3km = pressures[mask] * units.hPa
+    heights_3km = heights[mask] * units.m
+    wind_u_3km = wind_u[mask] * units.kts
+    wind_v_3km = wind_v[mask] * units.kts
+
+    # Compute mean wind for 0–3 km
+    mean_u = np.mean(wind_u_3km).to('kts')
+    mean_v = np.mean(wind_v_3km).to('kts')
+
+    # Compute 0-3 km shear vector
+    u_shear = wind_u_3km[-1] - wind_u_3km[0]  # u-component shear
+    v_shear = wind_v_3km[-1] - wind_v_3km[0]  # v-component shear
+
+    # Adjust shear vector by rotating 90 degrees
+    shear_mag = np.sqrt(u_shear**2 + v_shear**2)
+    u_shear_90 = -v_shear / shear_mag
+    v_shear_90 = u_shear / shear_mag
+
+    # Standard Bunkers adjustments (7.5 kts in the 90-degree shear direction)
+    bunkers_rm_u = mean_u + (7.5 * u_shear_90) * units.kts
+    bunkers_rm_v = mean_v + (7.5 * v_shear_90) * units.kts
+
+    bunkers_lm_u = mean_u - (7.5 * u_shear_90) * units.kts
+    bunkers_lm_v = mean_v - (7.5 * v_shear_90) * units.kts
+
+    # Assign storm motion based on hemisphere
+    if lat >= 0:
+        u_storm = bunkers_rm_u.magnitude
+        v_storm = bunkers_rm_v.magnitude
+    else:
+        u_storm = bunkers_lm_u.magnitude
+        v_storm = bunkers_lm_v.magnitude
+    
+    return u_storm, v_storm
